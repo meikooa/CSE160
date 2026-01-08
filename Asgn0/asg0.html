@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0064)https://rodger.global-linguist.com/webgl/ch02/DrawRectangle.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
     <title>Draw a blue rectangle (canvas version)</title>
   </head>
 
@@ -9,7 +7,47 @@
     <canvas id="cnv1" width="400" height="400">
       Please use a browser that supports "canvas"
     </canvas>
-    <script src="./asg0.js"></script>
-  
+    <script src="asg0.js"></script>
+    <script src="lib/cuon-matrix-cse160.js"></script>
+
+    <br> <br> <!-- Input fields for vector 1 -->
+  <label for="v1">V1: x</label>
+
+  <input type="text" id="v1x" name="v1" required
+    minlength="4" maxlength="8" size="10" />
+  <label for="v1">y</label>
+  <input type="text" id="v1y" name="v1" required
+    minlength="4" maxlength="8" size="10" />
+
+  <br> <br> <!-- Input fields for vector 2 -->
+
+  <label for="v2">V2: x</label>
+  <input type="text" id="v2x" name="v2" required
+    minlength="4" maxlength="8" size="10" />
+  <label for="v2">y</label>
+  <input type="text" id="v2y" name="v2" required
+    minlength="4" maxlength="8" size="10" />
+
+  <br> <br> <!-- Dropdown menu for selecting-->
+
+  <label for="Operation-select">Operation:</label>
+
+  <select name="Operation" id="Operation-select">
+    <option value="">--Please choose an option--</option>
+    <option value="add">Add</option>
+    <option value="sub">Sub</option>
+    <option value="mul">Mul</option>
+    <option value="div">Div</option>
+    <option value="area">Area</option>
+    <option value="angle">Angle Between</option>
+    <option value="mag">Magnitude</option>
+    <option value="norm">Normalize</option>
+  </select>
+
+  <!-- Input field for scalar -->
+  <label for="Scalar"> Scalar: </label>
+  <input type="text" id="Scalar" name="Scalar" required
+    minlength="1" maxlength="8" size="10" />
+  <input type="button" value="Calculate" onclick="handleDrawEvent()" />  
 
 </body></html>
