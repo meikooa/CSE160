@@ -17,7 +17,7 @@ var FSHADER_SOURCE =`
   }`
 
 // Global Vaiables
-let caanvas;
+let canvas;
 let gl;
 let a_Position;
 let u_FragColor;
@@ -72,6 +72,7 @@ function addActionsForHtmlUI() {
     //Button Events(Shape Type)
     document.getElementById('green').onclick = function () { g_selectedColor = [0.0, 1.0, 0.0, 1.0]; }; // Green
     document.getElementById('red').onclick = function () { g_selectedColor = [1.0, 0.0, 0.0, 1.0]; }; // Red
+    document.getElementById('clearButton').onclick = function () { g_shapesList = []; renderAllshapes(); };
 
     //Slider Events (Color Channels)
     document.getElementById('redSlide').addEventListener('mouseup', function() { g_selectedColor[0] = this.value/100; });
@@ -89,7 +90,13 @@ function main() {
     //set uo actions for the HTML UI elements
     addActionsForHtmlUI()
   // Register function (event handler) to be called on a mouse press
-  canvas.onmousedown = click;
+    canvas.onmousedown = click;
+    canvas.onmousemove = function (ev) {
+        if (ev.buttons & 1) {  // ×ó¼ü°´×¡
+            click(ev);
+        }
+    };
+
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -98,15 +105,8 @@ function main() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-class Point {
-  constructor(){
-    this.type = 'point';
-    this.a_Position = [0.0, 0.0, 0.0];
-    this.color = [1.0, 1.0, 1.0, 1.0];
-    this.size = 10.0;
-  }
-}
 var g_shapesList = []; // The array for storing shapes
+
 
 /*
 var g_points = [];  // The array for the position of a mouse press
@@ -117,7 +117,7 @@ var g_size = [];    // The array to store the size of a point
 function click(ev) {
     [x, y] = convertCoordinatedEvenToGL(ev)
 
-    let point = new Point();
+    let point = new Triangle();
     point.position = [x,y];
     point.color = g_selectedColor.slice();
     point.size = g_selectSize;
@@ -159,6 +159,8 @@ function convertCoordinatedEvenToGL(ev) {
 }
 
 function renderAllshapes() {
+
+    var startTime = performance.now();
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -166,6 +168,18 @@ function renderAllshapes() {
   var len = g_shapesList.length;
   for(var i = 0; i < len; i++) {
 
-      g_shapesList.render();
-  }
+      g_shapesList[i].render();
+    }
+
+    var duration = performance.now() - startTime;
+    sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
+}
+
+function sendTextToHTML(text, htmlID) {
+    var htmlElm = document.getElementById(htmlID);
+    if (!htmlElm) {
+        console.log("Failed to get" + htmlID + "from HTML");
+        return;
+    }
+    htmlElm.innerHTML = text;
 }
