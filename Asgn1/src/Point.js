@@ -22,7 +22,5 @@ class Point {
       gl.uniform1f(u_Size, size);
       // Draw
       gl.drawArrays(gl.POINTS, 0, 1);
-      gl.enableVertexAttribArray(a_Position);
-
     }
 }
