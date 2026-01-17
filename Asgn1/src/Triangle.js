@@ -13,7 +13,16 @@ class Triangle {
         var size = this.size;
 
         let s = size * .01;
-        if (!this.points) return;
+        let points;
+        if (!this.points) {
+            points = [
+                xy[0], xy[1] + s,
+                xy[0] - s, xy[1] - s,
+                xy[0] + s, xy[1] - s
+            ];
+        } else {
+            points = this.points;
+        };
         // Pass the position of a point to a_Position variable
         //gl.vertexAttrib3f(a_Position, xy[0], xy[1], 0.0);
         // Pass the color of a point to u_FragColor variable
@@ -25,7 +34,7 @@ class Triangle {
         //gl.drawArrays(gl.POINTS, 0, 1);
 
         //draw
-        drawTriangle(this.points);
+        drawTriangle(points);
     }
 }
 
@@ -49,6 +58,7 @@ function drawTriangle(vertices) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
 
   //gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(a_Position);
 
   /*
   var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
@@ -60,7 +70,7 @@ function drawTriangle(vertices) {
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
 
   // Enable the assignment to a_Position variable
-    gl.enableVertexAttribArray(a_Position);
+    //gl.enableVertexAttribArray(a_Position);
 
     gl.drawArrays(gl.TRIANGLES, 0, n);
 
