@@ -1,4 +1,5 @@
 class Circle {
+    //update
     constructor() {
         this.type = 'circle';
         this.position = [0.0, 0.0];

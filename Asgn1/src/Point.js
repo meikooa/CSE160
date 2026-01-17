@@ -1,4 +1,5 @@
 class Point {
+        //update
   constructor(){
     this.type = 'point';
     this.position = [0.0, 0.0];

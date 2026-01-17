@@ -1,5 +1,6 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
+    //update
 var VSHADER_SOURCE =`
   attribute vec4 a_Position;
   uniform float u_Size;
