@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Change a point color</title>
+
+    <style>
+        /*let canvs and my refernce image have same size*/
+        canvas, .reference-section img {
+            width: 400px;
+            height: 400px;
+            display: inline-block;
+            vertical-align: top;
+        }
+    </style>
+
+
+</head>
+
+<body onload="main()">
+    <canvas id="webgl" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <<!--    //update-->>>
+    <!--my reference image-->>
+    <div class="reference-section" style="display: inline-block;">
+        <img src="Zhenyi_reference image.png" alt="Reference Image">
+    </div>
+
+    <p id="numdot"> XXX   </p>
+
+    <button type="button" id="green">Green</button>
+    <button type="button" id="red">Red</button>
+    <button type="button" id="clearButton">Clear</button>
+    <button type="button" id="drawMyPicture">Draw My Picture</button>
+
+    <p>
+        <button type="button" id="pointButton">Point</button>
+        <button type="button" id="triButton">Triangle</button>
+        <button type="button" id="circleButton">Circle</button>
+
+
+    </p>
+
+    <p>
+        Red <input type="range" min="0" max="100" value="100" class="slider" id="redSlide">
+    <p>
+        Green <input type="range" min="0" max="100" value="100" class="slider" id="greenSlide">
+    <p>
+        Blue <input type="range" min="0" max="100" value="100" class="slider" id="blueSlide">
+    <p>
+        Size <input type="range" min="5" max="40" value="0" class="slider" id="sizeSlide">
+        (Circles) Segment Count <input type="range" min="3" max="100" value="20" class="slider" id="Segment">
+
+    </p>
+
+    <script src="../lib/webgl-utils.js"></script>
+    <script src="../lib/webgl-debug.js"></script>
+    <script src="../lib/cuon-utils.js"></script>
+    <script src="Point.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Circle.js"></script>
+    <script src="Cube.js"></script>
+    <script src="BlockyAnime.js"></script>
+</body>
+</html>
