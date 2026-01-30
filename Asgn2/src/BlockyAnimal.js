@@ -112,7 +112,7 @@ function main() {
   // Register function (event handler) to be called on a mouse press
     canvas.onmousedown = click;
     canvas.onmousemove = function (ev) {
-        if (ev.buttons & 1) {  // ×ó¼ü°´×¡
+        if (ev.buttons & 1) {  // ï¿½ï¿½ï¿½ï¿½ï¿½×¡
             click(ev);
         }
     };
@@ -123,6 +123,8 @@ function main() {
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
+
+  renderAllshapes();
 }
 
 var g_shapesList = []; // The array for storing shapes
@@ -191,12 +193,23 @@ function renderAllshapes() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  /*
   //var len = g_points.length;
   var len = g_shapesList.length;
   for(var i = 0; i < len; i++) {
 
       g_shapesList[i].render();
-    }
+    }*/
+
+    
+      //Draw a test triangle
+      //drawTriangle3D([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
+
+      //draw a cude
+      var body = new Cube();
+      body.color = [1.0, 0.0, 0.0, 1.0];
+        body.render(); 
+
 
     var duration = performance.now() - startTime;
     sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
