@@ -9,6 +9,7 @@ class Circle {
     }
 
     render() {
+        // update
         let xy = this.position;
         let rgba = this.color;
         let size = this.size;
