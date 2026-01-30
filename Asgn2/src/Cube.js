@@ -16,6 +16,8 @@ class Cube {
         //this.segments = g_segCount;
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
 
+        gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+
         /*
         // Circle 
         let r = size * 0.01;
@@ -40,8 +42,14 @@ class Cube {
         }*/
 
         //front of cube
-        drawTriangle3D([0.0, 0.0, 0.0,  1.0, 1.0, 0.0,  1.0, 0.0, 0.0]);
-        drawTriangle3D([0.0, 0.0, 1.0,  0.0, 1.0, 1.0,  1.0, 1.0, 0.0]);
+        drawTriangle([0,0,0,  1,1,0,  1,0,0]);
+        drawTriangle([0,0,0, 0,1,0, 1,1,0]);
 
+        gl.uniform4f(u_FragColor, rgba[0] * .9, rgba[1] * .9, rgba[2] * .9, rgba[3]);
+
+        //top of cude
+        
+        drawTriangle([0,1,0, 0,1,1, 1,1,1]);
+        drawTriangle([0,1,0, 1,1,1, 1,1,0]);
     }
 }

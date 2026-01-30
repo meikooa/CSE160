@@ -1,9 +1,12 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Asgn1",
     "\\Asgn1\\lib",
-    "\\Asgn1\\src"
+    "\\Asgn1\\src",
+    "\\Asgn2",
+    "\\Asgn2\\lib",
+    "\\Asgn2\\src"
   ],
+  "SelectedNode": "\\Asgn2\\lib\\cuon-matrix.js",
   "PreviewInSolutionExplorer": false
 }

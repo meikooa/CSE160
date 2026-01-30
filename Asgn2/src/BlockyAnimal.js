@@ -3,10 +3,10 @@
     //update
 var VSHADER_SOURCE =`
   attribute vec4 a_Position;
-  uniform float u_Size;
+  uniform mat4 u_ModelMatrix;
+  uniform mat4 u_GlobalRotateMatrix;
     void main() {
-    gl_Position = a_Position;
-    gl_PointSize = u_Size;
+    gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
   }`
 
 // Fragment shader program
@@ -31,6 +31,7 @@ let g_selectSize = 10.0;
 let u_Size;
 let g_selectType = POINT;
 let g_segCount = 20;
+let g_globalAngle = 0;
 
 function setupWebGL() {
     // Retrieve <canvas> element
@@ -65,12 +66,26 @@ function connetVariablesToGLSL() {
         return;
     }
 
+    u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
+    if (!u_ModelMatrix) {
+        console.log('Failed to get the storage location of u_ModelMatrix');
+        return;
+    }
+
+    u_GlobalRotateMatrix = gl.getUniformLocation(gl.program, 'u_GlobalRotateMatrix');
+    if (!u_GlobalRotateMatrix) {
+        console.log('Failed to get the storage location of u_GlobalRotateMatrix');
+        return;
+    }
+    //var identiyM = new Matrix4();
+   // gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
+    /*
     // Get the storage location of u_Size
     u_Size = gl.getUniformLocation(gl.program, 'u_Size');
     if (!u_Size) {
         console.log('Failed to get the storage location of u_Size');
         return;
-    }
+    }*/
 }
 
 
@@ -100,6 +115,8 @@ function addActionsForHtmlUI() {
     //Segment
     document.getElementById('Segment').addEventListener('mouseup', function () { g_segCount = this.value; });
 
+    //document.getElementById('angleSlide').addEventListener('mouseup', function () { g_globalAngle = this.value; renderAllshapes(); });
+    document.getElementById('angleSlide').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllshapes(); });
 
 }
 function main() {
@@ -200,19 +217,31 @@ function renderAllshapes() {
 
       g_shapesList[i].render();
     }*/
-
+    var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
     
       //Draw a test triangle
-      //drawTriangle3D([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
+      //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
       //draw a cude
-      var body = new Cube();
-      body.color = [1.0, 0.0, 0.0, 1.0];
+      
+        var body = new Cube();
+        body.color = [1.0, 0.0, 0.0, 1.0];
+        body.matrix.translate(-.25, -.5, 0.0);
+        body.matrix.scale = (0.5, 1, 0.5);
         body.render(); 
 
 
+        // left arm
+    var letArm = new Cube();
+    letArm.color = [1.0, 1.0, 0.0, 1.0];
+    letArm.matrix.setTranslate(.7, 0, 0.0);
+    letArm.matrix.rotate(45, 0, 0, 1);
+    letArm.matrix.scale = (0.5, 1, 0.5);
+    letArm.render(); 
     var duration = performance.now() - startTime;
-    sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
+    
+    //sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
 }
 
 function sendTextToHTML(text, htmlID) {
