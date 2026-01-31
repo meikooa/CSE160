@@ -476,6 +476,8 @@ function drawKoala() {
     rightPaw.matrix.translate(0, 0.1, 0);
     rightPaw.matrix.scale(0.35, 0.3, 0.35);
     rightPaw.render();
+
+    
 }
 
 function sendTextToHTML(text, htmlID) {
