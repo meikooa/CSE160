@@ -257,7 +257,7 @@ function renderAllshapes() {
         var body = new Cube();
         body.color = [1.0, 0.0, 0.0, 1.0];
         body.matrix.translate(-.25, -.5, 0.0);
-        body.matrix.scale = (0.5, 0.3, 0.5);
+        body.matrix.scale (0.5, 0.3, 0.5);
         body.render(); 
 
 
@@ -276,7 +276,7 @@ function renderAllshapes() {
     }*/
     //leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
     var yellowCoordinatesMat =new Matrix4(leftArm.matrix);
-    leftArm.matrix.scale = (0.25, 0.7, 0.5);
+    leftArm.matrix.scale(0.25, 0.7, 0.5);
     //letArm.matrix.translate(-5, 0, 0);
     leftArm.render(); 
     //var duration = performance.now() - startTime;
@@ -289,7 +289,7 @@ function renderAllshapes() {
     /*
     box.matrix.setTranslate(-0.1,0.1,0,0);
     box.matrix.rotate(-30,1,0,0);
-    box.matrix.scale = (-0.5,0,0);*/
+    box.matrix.scale (-0.5,0,0);*/
     //letArm.matrix.translate(-5, 0, 0);
     box.render();
 
