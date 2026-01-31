@@ -50,6 +50,23 @@ class Cube {
         //top of cude
         
         drawTriangle([0,1,0, 0,1,1, 1,1,1]);
-        drawTriangle([0,1,0, 1,1,1, 1,1,0]);
+        drawTriangle([0, 1, 0, 1, 1, 1, 1, 1, 0]);
+
+        // Back face
+        drawTriangle([0, 0, 1, 1, 0, 1, 1, 1, 1]);
+        drawTriangle([0, 0, 1, 1, 1, 1, 0, 1, 1]);
+
+        // Bottom face
+        drawTriangle([0, 0, 0, 1, 0, 0, 1, 0, 1]);
+        drawTriangle([0, 0, 0, 1, 0, 1, 0, 0, 1]);
+
+        // Left face
+        drawTriangle([0, 0, 0, 0, 1, 0, 0, 1, 1]);
+        drawTriangle([0, 0, 0, 0, 1, 1, 0, 0, 1]);
+
+        // Right face
+        drawTriangle([1, 0, 0, 1, 1, 0, 1, 1, 1]);
+        drawTriangle([1, 0, 0, 1, 1, 1, 1, 0, 1]);
+
     }
 }

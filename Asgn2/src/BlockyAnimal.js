@@ -32,6 +32,8 @@ let u_Size;
 let g_selectType = POINT;
 let g_segCount = 20;
 let g_globalAngle = 0;
+let g_yellowAngle = 0
+let g_yellowAnimation = false;
 
 function setupWebGL() {
     // Retrieve <canvas> element
@@ -44,6 +46,7 @@ function setupWebGL() {
         return;
     }
 
+    gl.enable(gl.DEPTH_TEST);
 }
 
 function connetVariablesToGLSL() {
@@ -100,6 +103,8 @@ function addActionsForHtmlUI() {
     document.getElementById('triButton').onclick = function () { g_selectType = TRIANGLE };
     document.getElementById('circleButton').onclick = function () { g_selectType = CIRCLE };
     document.getElementById("drawMyPicture").onclick = function () { drawMyPicture() };
+    document.getElementById("animationYellowOnButton").onclick = function () { g_yellowAnimation = true };
+    document.getElementById("animationYellowOffButton").onclick = function () { g_yellowAnimation = false };
 
 
 
@@ -117,6 +122,8 @@ function addActionsForHtmlUI() {
 
     //document.getElementById('angleSlide').addEventListener('mouseup', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('angleSlide').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllshapes(); });
+    document.getElementById('yellowSlide').addEventListener('mousemove', function () { g_yellowAngle = this.value; renderAllshapes(); });
+
 
 }
 function main() {
@@ -139,13 +146,28 @@ function main() {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
   // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  //gl.clear(gl.COLOR_BUFFER_BIT);
 
-  renderAllshapes();
+    //renderAllshapes();
+    requestAnimationFrame(tick);
 }
 
 var g_shapesList = []; // The array for storing shapes
 
+var g_startTime = performance.now() / 1000.0;
+var g_seconds = performance.now() / 1000.0 - g_startTime;
+
+function tick() {
+    g_seconds = performance.now() / 100.0 - g_startTime;
+    //console.log(g_seconds);
+
+    updateAnimationAngles();
+
+    // Draw everything
+    renderAllshapes();
+
+    requestAnimationFrame(tick);
+}
 
 /*
 var g_points = [];  // The array for the position of a mouse press
@@ -193,6 +215,8 @@ function click(ev) {
     renderAllshapes();
 }
 
+
+
 function convertCoordinatedEvenToGL(ev) {
     var x = ev.clientX; // x coordinate of a mouse pointer
     var y = ev.clientY; // y coordinate of a mouse pointer
@@ -204,6 +228,11 @@ function convertCoordinatedEvenToGL(ev) {
     return([x,y])
 }
 
+function updateAnimationAngles() {
+    if (g_yellowAnimation) {
+        g_yellowAngle = (45 * Math.sin(g_seconds));
+    }
+}
 function renderAllshapes() {
 
     var startTime = performance.now();
@@ -228,19 +257,47 @@ function renderAllshapes() {
         var body = new Cube();
         body.color = [1.0, 0.0, 0.0, 1.0];
         body.matrix.translate(-.25, -.5, 0.0);
-        body.matrix.scale = (0.5, 1, 0.5);
+        body.matrix.scale = (0.5, 0.3, 0.5);
         body.render(); 
 
 
         // left arm
-    var letArm = new Cube();
-    letArm.color = [1.0, 1.0, 0.0, 1.0];
-    letArm.matrix.setTranslate(.7, 0, 0.0);
-    letArm.matrix.rotate(45, 0, 0, 1);
-    letArm.matrix.scale = (0.5, 1, 0.5);
-    letArm.render(); 
+    var leftArm = new Cube();
+    leftArm.color = [1.0, 1.0, 0.0, 1.0];
+    leftArm.matrix.setTranslate(0, -0.5, 0.0);
+    leftArm.matrix.rotate(-5, 1, 0, 0);
+    leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
+    /*
+    if (g_yellowAnimation) {
+        leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
+
+    } else {
+        leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
+    }*/
+    //leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
+    var yellowCoordinatesMat =new Matrix4(leftArm.matrix);
+    leftArm.matrix.scale = (0.25, 0.7, 0.5);
+    //letArm.matrix.translate(-5, 0, 0);
+    leftArm.render(); 
+    //var duration = performance.now() - startTime;
+
+
+    var box = new Cube();
+    box.color = [1,0,1,1];
+    box.matrix = yellowCoordinatesMat; // box 就会和 leftarm一起旋转 
+    box.matrix.translate(0, 0.7, 0);
+    /*
+    box.matrix.setTranslate(-0.1,0.1,0,0);
+    box.matrix.rotate(-30,1,0,0);
+    box.matrix.scale = (-0.5,0,0);*/
+    //letArm.matrix.translate(-5, 0, 0);
+    box.render();
+
+
+
+
+
     var duration = performance.now() - startTime;
-    
     //sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
 }
 
