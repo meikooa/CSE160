@@ -35,6 +35,19 @@ let g_globalAngle = 0;
 let g_yellowAngle = 0
 let g_yellowAnimation = false;
 
+// Koala animation variables
+let g_headAngle = 0;
+let g_leftArmUpper = -20;
+let g_leftArmLower = 0;
+let g_rightArmUpper = -20;
+let g_rightArmLower = 0;
+let g_leftLegUpper = 10;
+let g_leftLegLower = -30;
+let g_rightLegUpper = 10;
+let g_rightLegLower = -30;
+let g_earAngle = 0;
+let g_koalaAnimation = false;
+
 function setupWebGL() {
     // Retrieve <canvas> element
     canvas = document.getElementById('webgl');
@@ -156,7 +169,8 @@ var g_shapesList = []; // The array for storing shapes
 
 var g_startTime = performance.now() / 1000.0;
 var g_seconds = performance.now() / 1000.0 - g_startTime;
-
+var headSphere = new Sphere();
+    headSphere.segments = 10;
 function tick() {
     g_seconds = performance.now() / 100.0 - g_startTime;
     //console.log(g_seconds);
@@ -229,8 +243,23 @@ function convertCoordinatedEvenToGL(ev) {
 }
 
 function updateAnimationAngles() {
+    /*
     if (g_yellowAnimation) {
         g_yellowAngle = (45 * Math.sin(g_seconds));
+    }*/
+
+    if (g_koalaAnimation) {
+        // Gentle breathing animation
+        g_headAngle = 5 * Math.sin(g_seconds * 0.5);
+
+        // Waving arms
+        g_leftArmUpper = -20 + 30 * Math.sin(g_seconds);
+        g_leftArmLower = -10 * Math.sin(g_seconds * 1.5);
+
+        g_rightArmUpper = -20 + 30 * Math.sin(g_seconds + Math.PI);
+
+        // Ear wiggle
+        g_earAngle = 5 * Math.sin(g_seconds * 3);
     }
 }
 function renderAllshapes() {
@@ -253,20 +282,21 @@ function renderAllshapes() {
       //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
       //draw a cude
-      
+      /*
         var body = new Cube();
         body.color = [1.0, 0.0, 0.0, 1.0];
         body.matrix.translate(-.25, -.5, 0.0);
         body.matrix.scale (0.5, 0.3, 0.5);
-        body.render(); 
+        body.render(); */
 
 
         // left arm
+        /*
     var leftArm = new Cube();
     leftArm.color = [1.0, 1.0, 0.0, 1.0];
     leftArm.matrix.setTranslate(0, -0.5, 0.0);
     leftArm.matrix.rotate(-5, 1, 0, 0);
-    leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
+    leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);*/
     /*
     if (g_yellowAnimation) {
         leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
@@ -275,30 +305,177 @@ function renderAllshapes() {
         leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
     }*/
     //leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
-    var yellowCoordinatesMat =new Matrix4(leftArm.matrix);
-    leftArm.matrix.scale(0.25, 0.7, 0.5);
+    //var yellowCoordinatesMat =new Matrix4(leftArm.matrix);
+    //leftArm.matrix.scale(0.25, 0.7, 0.5);
     //letArm.matrix.translate(-5, 0, 0);
-    leftArm.render(); 
+    //leftArm.render();
     //var duration = performance.now() - startTime;
 
-
+    /*
     var box = new Cube();
     box.color = [1,0,1,1];
     box.matrix = yellowCoordinatesMat; // box 就会和 leftarm一起旋转 
     box.matrix.translate(0, 0.7, 0);
-    /*
+    
     box.matrix.setTranslate(-0.1,0.1,0,0);
     box.matrix.rotate(-30,1,0,0);
-    box.matrix.scale (-0.5,0,0);*/
+    box.matrix.scale (-0.5,0,0);
     //letArm.matrix.translate(-5, 0, 0);
-    box.render();
 
 
+    box.render();*/
+
+
+    // Replace or add to your renderAllshapes() function
+    /*
+    headSphere.color = [1.0, 0.8, 0.6, 1.0];
+    headSphere.matrix.setTranslate(0, 0.5, 0);
+    headSphere.matrix.scale(0.2, 0.2, 0.2);
+    headSphere.render();*/
+
+    drawKoala();
 
 
 
     var duration = performance.now() - startTime;
     //sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
+}
+function drawKoala() {
+    // Koala colors
+    var koalaGray = [0.6, 0.6, 0.65, 1.0];
+    var koalaDarkGray = [0.4, 0.4, 0.45, 1.0];
+    var koalaWhite = [0.95, 0.95, 0.95, 1.0];
+    var koalaBlack = [0.1, 0.1, 0.1, 1.0];
+    var koalaNose = [0.2, 0.2, 0.2, 1.0];
+
+
+    // Body (cylinder) - Base of the hierarchy
+    
+    var body = new Cylinder();
+    body.color = koalaGray;
+    body.matrix.translate(0, -0.3, 0);
+    body.matrix.rotate(180, 0, -90, 0);
+    body.matrix.scale(0.35, 0.5, 0.35);
+    var bodyCoords = new Matrix4(body.matrix);
+    body.render();
+
+    // Head (sphere) - connected to body
+    
+    var head = new Sphere();
+    head.color = koalaGray;
+    head.matrix = new Matrix4(bodyCoords);
+    head.matrix.translate(0, 1.5, 0);
+    head.matrix.rotate(g_headAngle, 0, 1, 0);
+    head.matrix.scale(0.85, 0.75, 0.75);
+    var headCoords = new Matrix4(head.matrix);
+    head.render();
+
+    var leftEar = new Sphere();
+    leftEar.color = koalaDarkGray;
+    leftEar.matrix = new Matrix4(headCoords);
+    leftEar.matrix.translate(-0.8, 0.6, 0);
+    leftEar.matrix.rotate(g_earAngle, 0, 0, 1);
+    leftEar.matrix.scale(0.55, 0.55, 0.3);
+    leftEar.render();
+
+    // Right Ear (sphere)
+    var rightEar = new Sphere();
+    rightEar.color = koalaDarkGray;
+    rightEar.matrix = new Matrix4(headCoords);
+    rightEar.matrix.translate(0.8, 0.6, 0);
+    rightEar.matrix.rotate(-g_earAngle, 0, 0, 1);
+    rightEar.matrix.scale(0.55, 0.55, 0.3);
+    rightEar.render();
+
+    // Snout (sphere)
+    var snout = new Sphere();
+    snout.color = koalaWhite;
+    snout.matrix = new Matrix4(headCoords);
+    snout.matrix.translate(0, -0.2, 0.85);
+    snout.matrix.scale(0.5, 0.4, 0.4);
+    snout.render();
+
+    // Nose (small sphere)
+    var nose = new Sphere();
+    nose.color = koalaNose;
+    nose.matrix = new Matrix4(headCoords);
+    nose.matrix.translate(0, -0.1, 1.1);
+    nose.matrix.scale(0.25, 0.2, 0.2);
+    nose.render();
+
+    // Left Eye
+    var leftEye = new Sphere();
+    leftEye.color = koalaBlack;
+    leftEye.matrix = new Matrix4(headCoords);
+    leftEye.matrix.translate(-0.35, 0.15, 0.85);
+    leftEye.matrix.scale(0.15, 0.15, 0.1);
+    leftEye.render();
+
+    // Right Eye
+    var rightEye = new Sphere();
+    rightEye.color = koalaBlack;
+    rightEye.matrix = new Matrix4(headCoords);
+    rightEye.matrix.translate(0.35, 0.15, 0.85);
+    rightEye.matrix.scale(0.15, 0.15, 0.1);
+    rightEye.render();
+
+    // Left Upper Arm (cylinder)
+    var leftArmUpper = new Cylinder();
+    leftArmUpper.color = koalaGray;
+    leftArmUpper.matrix = new Matrix4(bodyCoords);
+    leftArmUpper.matrix.translate(1, 0.8, 0);
+    leftArmUpper.matrix.rotate(g_leftArmUpper, 1, 0, 0);
+    leftArmUpper.matrix.rotate(-135, 0, 0, 1);
+    var leftArmUpperCoords = new Matrix4(leftArmUpper.matrix);
+    leftArmUpper.matrix.scale(0.25, 0.5, 0.25);
+    leftArmUpper.render();
+
+    // Left Lower Arm (cylinder) - connected to upper arm
+    var leftArmLower = new Cylinder();
+    leftArmLower.color = koalaDarkGray;
+    leftArmLower.matrix = new Matrix4(leftArmUpperCoords);
+    leftArmLower.matrix.translate(0, 1.0, 0);
+    leftArmLower.matrix.rotate(g_leftArmLower, 1, 0, 0);
+    var leftArmLowerCoords = new Matrix4(leftArmLower.matrix);
+    leftArmLower.matrix.scale(0.25, -0.5,0.25);
+    leftArmLower.render();
+
+    // Left Paw (sphere) - connected to lower arm
+    var leftPaw = new Sphere();
+    leftPaw.color = koalaBlack;
+    leftPaw.matrix = new Matrix4(leftArmLowerCoords);
+    leftPaw.matrix.translate(0, 0.1, 0);
+    leftPaw.matrix.scale(0.35, 0.35, 0.35);
+    leftPaw.render();
+
+    // Right Upper Arm
+    var rightArmUpper = new Cylinder();
+    rightArmUpper.color = koalaGray;
+    rightArmUpper.matrix = new Matrix4(bodyCoords);
+    rightArmUpper.matrix.translate(-1, 0.8, 0);
+    rightArmUpper.matrix.rotate(g_rightArmUpper, 1, 0, 0);
+    rightArmUpper.matrix.rotate(135, 0, 0, 1);
+    var rightArmUpperCoords = new Matrix4(rightArmUpper.matrix);
+    rightArmUpper.matrix.scale(0.25, 0.5, 0.25);
+    rightArmUpper.render();
+
+    // Right Lower Arm
+    var rightArmLower = new Cylinder();
+    rightArmLower.color = koalaDarkGray;
+    rightArmLower.matrix = new Matrix4(rightArmUpperCoords);
+    rightArmLower.matrix.translate(0, 1.0, 0);
+    rightArmLower.matrix.rotate(g_rightArmLower, 1, 0, 0);
+    var rightArmLowerCoords = new Matrix4(rightArmLower.matrix);
+    rightArmLower.matrix.scale(0.25, -0.5, 0.25);
+    rightArmLower.render();
+
+    // Right Paw
+    var rightPaw = new Sphere();
+    rightPaw.color = koalaBlack;
+    rightPaw.matrix = new Matrix4(rightArmLowerCoords);
+    rightPaw.matrix.translate(0, 0.1, 0);
+    rightPaw.matrix.scale(0.35, 0.3, 0.35);
+    rightPaw.render();
 }
 
 function sendTextToHTML(text, htmlID) {
@@ -309,6 +486,16 @@ function sendTextToHTML(text, htmlID) {
     }
     htmlElm.innerHTML = text;
 }
+
+function sendTextToHTML(text, htmlID) {
+    var htmlElm = document.getElementById(htmlID);
+    if (!htmlElm) {
+        console.log("Failed to get" + htmlID + "from HTML");
+        return;
+    }
+    htmlElm.innerHTML = text;
+}
+
 
 function drawMyPicture() {
     //clean the canvas
