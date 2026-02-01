@@ -116,8 +116,8 @@ function addActionsForHtmlUI() {
     document.getElementById('triButton').onclick = function () { g_selectType = TRIANGLE };
     document.getElementById('circleButton').onclick = function () { g_selectType = CIRCLE };
     document.getElementById("drawMyPicture").onclick = function () { drawMyPicture() };
-    document.getElementById("animationYellowOnButton").onclick = function () { g_yellowAnimation = true };
-    document.getElementById("animationYellowOffButton").onclick = function () { g_yellowAnimation = false };
+    document.getElementById("animationYellowOnButton").onclick = function () { g_koalaAnimation = true };
+    document.getElementById("animationYellowOffButton").onclick = function () { g_koalaAnimation = false };
 
 
 
@@ -250,6 +250,7 @@ function updateAnimationAngles() {
 
     if (g_koalaAnimation) {
         // Gentle breathing animation
+        console.log("67")
         g_headAngle = 5 * Math.sin(g_seconds * 0.5);
 
         // Waving arms
@@ -423,9 +424,9 @@ function drawKoala() {
     var leftArmUpper = new Cylinder();
     leftArmUpper.color = koalaGray;
     leftArmUpper.matrix = new Matrix4(bodyCoords);
-    leftArmUpper.matrix.translate(1, 0.8, 0);
+    leftArmUpper.matrix.translate(0.8, 0.75, 0.3);
     leftArmUpper.matrix.rotate(g_leftArmUpper, 1, 0, 0);
-    leftArmUpper.matrix.rotate(-135, 0, 0, 1);
+    leftArmUpper.matrix.rotate(-270, 1, 0.7, 1);
     var leftArmUpperCoords = new Matrix4(leftArmUpper.matrix);
     leftArmUpper.matrix.scale(0.25, 0.5, 0.25);
     leftArmUpper.render();
@@ -452,9 +453,9 @@ function drawKoala() {
     var rightArmUpper = new Cylinder();
     rightArmUpper.color = koalaGray;
     rightArmUpper.matrix = new Matrix4(bodyCoords);
-    rightArmUpper.matrix.translate(-1, 0.8, 0);
+    rightArmUpper.matrix.translate(-0.8, 0.75, 0.3);
     rightArmUpper.matrix.rotate(g_rightArmUpper, 1, 0, 0);
-    rightArmUpper.matrix.rotate(135, 0, 0, 1);
+    rightArmUpper.matrix.rotate(-270, 90, 0.7, 1);
     var rightArmUpperCoords = new Matrix4(rightArmUpper.matrix);
     rightArmUpper.matrix.scale(0.25, 0.5, 0.25);
     rightArmUpper.render();
@@ -481,9 +482,10 @@ function drawKoala() {
     var leftLegUpper = new Cylinder();
     leftLegUpper.color = koalaGray;
     leftLegUpper.matrix = new Matrix4(bodyCoords);
-    leftLegUpper.matrix.translate(-0.5, -0.0, 0);
-    leftLegUpper.matrix.rotate(180, 1, 0, 0);
+    leftLegUpper.matrix.translate(-0.5, 0.2, 0.5);
+    leftLegUpper.matrix.rotate(120, 90, 0, 1);
     leftLegUpper.matrix.rotate(g_leftLegUpper, 1, 0, 0);
+    leftLegUpper.matrix.rotate(-g_rightArmUpper, 1, 0, 0);
     var leftLegUpperCoords = new Matrix4(leftLegUpper.matrix);
     leftLegUpper.matrix.scale(0.3, 0.5, 0.3);
     leftLegUpper.render()
@@ -510,9 +512,10 @@ function drawKoala() {
     var rightLegUpper = new Cylinder();
     rightLegUpper.color = koalaGray;
     rightLegUpper.matrix = new Matrix4(bodyCoords);
-    rightLegUpper.matrix.translate(0.5, 0.0, 0);
-    rightLegUpper.matrix.rotate(180, 1, 0, 0);
+    rightLegUpper.matrix.translate(0.5, 0.2, 0.5);
+    rightLegUpper.matrix.rotate(120, 90, 0, 1);
     rightLegUpper.matrix.rotate(g_rightLegUpper, 1, 0, 0);
+    rightLegUpper.matrix.rotate(-g_leftArmUpper, 1, 0, 0);
     var rightLegUpperCoords = new Matrix4(rightLegUpper.matrix);
     rightLegUpper.matrix.scale(0.3, 0.5, 0.3);
     rightLegUpper.render();
@@ -536,6 +539,15 @@ function drawKoala() {
     rightFoot.matrix.scale(0.35, 0.3, 0.35);
     rightFoot.render();
 
+    // tree 
+    var tree = new Sphere();
+    tree.color = [0.588, 0.294, 0, 1.0];
+    tree.matrix = new Matrix4(body.matrix);
+    tree.matrix.translate(0, -0.5, 1.5);
+    tree.matrix.rotate(90, 0, 0, 1);
+
+    tree.matrix.scale(2, 0.3, 0.5);
+    tree.render();
 }
 
 function sendTextToHTML(text, htmlID) {
