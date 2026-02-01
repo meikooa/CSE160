@@ -1,7 +1,7 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
-    //update
-var VSHADER_SOURCE =`
+//update
+var VSHADER_SOURCE = `
   attribute vec4 a_Position;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
@@ -10,7 +10,7 @@ var VSHADER_SOURCE =`
   }`
 
 // Fragment shader program
-var FSHADER_SOURCE =`
+var FSHADER_SOURCE = `
   precision mediump float;
   uniform vec4 u_FragColor;
   void main() {
@@ -47,6 +47,17 @@ let g_rightLegUpper = 10;
 let g_rightLegLower = -30;
 let g_earAngle = 0;
 let g_koalaAnimation = false;
+
+// Mouse rotation variables
+let g_mouseXRotation = 0;
+let g_mouseYRotation = 0;
+
+// Poke animation variables
+let g_pokeAnimation = false;
+let g_pokeStartTime = 0;
+let g_pokeDuration = 3.0; // 3 seconds for complete animation
+let g_fallOffset = 0;
+let g_koalaRotation = 0;
 
 function setupWebGL() {
     // Retrieve <canvas> element
@@ -94,7 +105,7 @@ function connetVariablesToGLSL() {
         return;
     }
     //var identiyM = new Matrix4();
-   // gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
+    // gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
     /*
     // Get the storage location of u_Size
     u_Size = gl.getUniformLocation(gl.program, 'u_Size');
@@ -123,9 +134,9 @@ function addActionsForHtmlUI() {
 
 
     //Slider Events (Color Channels)
-    document.getElementById('redSlide').addEventListener('mouseup', function() { g_selectedColor[0] = this.value/100; });
-    document.getElementById('greenSlide').addEventListener('mouseup', function() { g_selectedColor[1] = this.value/100; });
-    document.getElementById('blueSlide').addEventListener('mouseup', function() { g_selectedColor[2] = this.value/100; });
+    document.getElementById('redSlide').addEventListener('mouseup', function () { g_selectedColor[0] = this.value / 100; });
+    document.getElementById('greenSlide').addEventListener('mouseup', function () { g_selectedColor[1] = this.value / 100; });
+    document.getElementById('blueSlide').addEventListener('mouseup', function () { g_selectedColor[2] = this.value / 100; });
 
     // size slider
     document.getElementById('sizeSlide').addEventListener('mouseup', function () { g_selectSize = this.value; });
@@ -146,20 +157,44 @@ function main() {
 
     //set uo actions for the HTML UI elements
     addActionsForHtmlUI()
-  // Register function (event handler) to be called on a mouse press
-    canvas.onmousedown = click;
-    canvas.onmousemove = function (ev) {
-        if (ev.buttons & 1) {  // �����ס
+    // Register function (event handler) to be called on a mouse press
+    canvas.onmousedown = function (ev) {
+        // Check if Shift key is held
+        if (ev.shiftKey) {
+            // Trigger poke animation
+            if (!g_pokeAnimation) {
+                g_pokeAnimation = true;
+                g_pokeStartTime = g_seconds;
+            }
+        } else {
+            // For clicks not dragging, use the original click function
             click(ev);
         }
     };
 
+    canvas.onmousemove = function (ev) {
+        if (ev.buttons & 1 && !ev.shiftKey) {  // Left mouse button is held (not Shift+Click)
+            // Map mouse position to rotation
+            var rect = ev.target.getBoundingClientRect();
+            var x = ev.clientX - rect.left;
+            var y = ev.clientY - rect.top;
 
-  // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            // Map x position (0 to canvas.width) to x-rotation (-180 to 180)
+            g_mouseYRotation = ((x / canvas.width) * -360) - 180;
 
-  // Clear <canvas>
-  //gl.clear(gl.COLOR_BUFFER_BIT);
+            // Map y position (0 to canvas.height) to y-rotation (-180 to 180)
+            g_mouseXRotation = ((y / canvas.height) * -360) - 180;
+
+            // No need to call click(ev) here anymore
+        }
+    };
+
+
+    // Specify the color for clearing <canvas>
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    // Clear <canvas>
+    //gl.clear(gl.COLOR_BUFFER_BIT);
 
     //renderAllshapes();
     requestAnimationFrame(tick);
@@ -170,7 +205,7 @@ var g_shapesList = []; // The array for storing shapes
 var g_startTime = performance.now() / 1000.0;
 var g_seconds = performance.now() / 1000.0 - g_startTime;
 var headSphere = new Sphere();
-    headSphere.segments = 10;
+headSphere.segments = 10;
 function tick() {
     g_seconds = performance.now() / 100.0 - g_startTime;
     //console.log(g_seconds);
@@ -195,12 +230,12 @@ function click(ev) {
     let point;
     if (g_selectType == POINT) {
         point = new Point();
-    } else if (g_selectType == TRIANGLE){
+    } else if (g_selectType == TRIANGLE) {
         point = new Triangle();
-    }else {
+    } else {
         point = new Circle();
     }
-    point.position = [x,y];
+    point.position = [x, y];
     point.color = g_selectedColor.slice();
     point.size = g_selectSize;
     g_shapesList.push(point);
@@ -239,7 +274,7 @@ function convertCoordinatedEvenToGL(ev) {
     x = ((x - rect.left) - canvas.width / 2) / (canvas.width / 2);
     y = (canvas.height / 2 - (y - rect.top)) / (canvas.height / 2);
 
-    return([x,y])
+    return ([x, y])
 }
 
 function updateAnimationAngles() {
@@ -248,8 +283,44 @@ function updateAnimationAngles() {
         g_yellowAngle = (45 * Math.sin(g_seconds));
     }*/
 
-    if (g_koalaAnimation) {
-        // Gentle breathing animation
+    // Poke animation takes priority
+    if (g_pokeAnimation) {
+        let elapsedTime = g_seconds - g_pokeStartTime;
+        let t = elapsedTime / g_pokeDuration; // normalized time 0 to 1
+
+        if (t < 1.0) {
+            // Just falling and tumbling
+            let fallCurve = t * t; // accelerate fall
+
+            g_fallOffset = -2.5 * fallCurve;
+            g_koalaRotation = 360 * t; // complete rotation
+
+            // Flailing limbs
+            g_leftArmUpper = 40 + 30 * Math.sin(t * Math.PI * 6);
+            g_rightArmUpper = 40 + 30 * Math.sin(t * Math.PI * 6 + Math.PI);
+            g_leftLegUpper = 10 + 40 * Math.sin(t * Math.PI * 5);
+            g_rightLegUpper = 10 + 40 * Math.sin(t * Math.PI * 5 + Math.PI);
+            g_leftArmLower = -30 * Math.sin(t * Math.PI * 8);
+            g_rightArmLower = -30 * Math.sin(t * Math.PI * 8);
+            g_earAngle = 10 * Math.sin(t * Math.PI * 12);
+        } else {
+            // Animation complete - reset to normal
+            g_pokeAnimation = false;
+            g_fallOffset = 0;
+            g_koalaRotation = 0;
+            g_headAngle = 0;
+            g_leftArmUpper = -20;
+            g_leftArmLower = 0;
+            g_rightArmUpper = -20;
+            g_rightArmLower = 0;
+            g_leftLegUpper = 10;
+            g_leftLegLower = -30;
+            g_rightLegUpper = 10;
+            g_rightLegLower = -30;
+            g_earAngle = 0;
+        }
+    } else if (g_koalaAnimation) {
+        // Normal animation - Gentle breathing and waving
         console.log("67")
         g_headAngle = 5 * Math.sin(g_seconds * 0.5);
 
@@ -261,43 +332,54 @@ function updateAnimationAngles() {
 
         // Ear wiggle
         g_earAngle = 5 * Math.sin(g_seconds * 3);
+
+        // Reset fall variables
+        g_fallOffset = 0;
+        g_koalaRotation = 0;
+    } else {
+        // No animation - ensure fall variables are reset
+        g_fallOffset = 0;
+        g_koalaRotation = 0;
     }
 }
 function renderAllshapes() {
 
     var startTime = performance.now();
-  // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT);
+    // Clear <canvas>
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-  /*
-  //var len = g_points.length;
-  var len = g_shapesList.length;
-  for(var i = 0; i < len; i++) {
-
-      g_shapesList[i].render();
-    }*/
-    var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+    /*
+    //var len = g_points.length;
+    var len = g_shapesList.length;
+    for(var i = 0; i < len; i++) {
+  
+        g_shapesList[i].render();
+      }*/
+    var globalRotMat = new Matrix4()
+        .rotate(g_globalAngle, 0, 1, 0)
+        .rotate(g_mouseXRotation, 1, 0, 0)
+        .rotate(g_mouseYRotation, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
-    
-      //Draw a test triangle
-      //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
-      //draw a cude
-      /*
-        var body = new Cube();
-        body.color = [1.0, 0.0, 0.0, 1.0];
-        body.matrix.translate(-.25, -.5, 0.0);
-        body.matrix.scale (0.5, 0.3, 0.5);
-        body.render(); */
+    //Draw a test triangle
+    //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
+
+    //draw a cude
+    /*
+      var body = new Cube();
+      body.color = [1.0, 0.0, 0.0, 1.0];
+      body.matrix.translate(-.25, -.5, 0.0);
+      body.matrix.scale (0.5, 0.3, 0.5);
+      body.render(); */
 
 
-        // left arm
-        /*
-    var leftArm = new Cube();
-    leftArm.color = [1.0, 1.0, 0.0, 1.0];
-    leftArm.matrix.setTranslate(0, -0.5, 0.0);
-    leftArm.matrix.rotate(-5, 1, 0, 0);
-    leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);*/
+    // left arm
+    /*
+var leftArm = new Cube();
+leftArm.color = [1.0, 1.0, 0.0, 1.0];
+leftArm.matrix.setTranslate(0, -0.5, 0.0);
+leftArm.matrix.rotate(-5, 1, 0, 0);
+leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);*/
     /*
     if (g_yellowAnimation) {
         leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
@@ -351,17 +433,18 @@ function drawKoala() {
 
 
     // Body (cylinder) - Base of the hierarchy
-    
+
     var body = new Cylinder();
     body.color = koalaGray;
-    body.matrix.translate(0, -0.3, 0);
+    body.matrix.translate(0, -0.3 + g_fallOffset, 0);
+    body.matrix.rotate(g_koalaRotation, 0, 0, 1); // Apply tumble rotation
     body.matrix.rotate(180, 0, -90, 0);
     body.matrix.scale(0.35, 0.5, 0.35);
     var bodyCoords = new Matrix4(body.matrix);
     body.render();
 
     // Head (sphere) - connected to body
-    
+
     var head = new Sphere();
     head.color = koalaGray;
     head.matrix = new Matrix4(bodyCoords);
@@ -438,7 +521,7 @@ function drawKoala() {
     leftArmLower.matrix.translate(0, 1.0, 0);
     leftArmLower.matrix.rotate(g_leftArmLower, 1, 0, 0);
     var leftArmLowerCoords = new Matrix4(leftArmLower.matrix);
-    leftArmLower.matrix.scale(0.25, -0.5,0.25);
+    leftArmLower.matrix.scale(0.25, -0.5, 0.25);
     leftArmLower.render();
 
     // Left Paw (sphere) - connected to lower arm
@@ -571,7 +654,7 @@ function sendTextToHTML(text, htmlID) {
 
 function drawMyPicture() {
     //clean the canvas
-     g_shapesList = [];
+    g_shapesList = [];
 
     let center = [0, 0];
     let radius = 0.5;
