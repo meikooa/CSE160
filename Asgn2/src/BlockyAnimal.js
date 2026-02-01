@@ -400,7 +400,7 @@ function drawKoala() {
     nose.color = koalaNose;
     nose.matrix = new Matrix4(headCoords);
     nose.matrix.translate(0, -0.1, 1.1);
-    nose.matrix.scale(0.25, 0.2, 0.2);
+    nose.matrix.scale(0.25, 0.3, 0.2);
     nose.render();
 
     // Left Eye
@@ -477,7 +477,65 @@ function drawKoala() {
     rightPaw.matrix.scale(0.35, 0.3, 0.35);
     rightPaw.render();
 
-    
+    // Left Upper Leg
+    var leftLegUpper = new Cylinder();
+    leftLegUpper.color = koalaGray;
+    leftLegUpper.matrix = new Matrix4(bodyCoords);
+    leftLegUpper.matrix.translate(-0.5, -0.0, 0);
+    leftLegUpper.matrix.rotate(180, 1, 0, 0);
+    leftLegUpper.matrix.rotate(g_leftLegUpper, 1, 0, 0);
+    var leftLegUpperCoords = new Matrix4(leftLegUpper.matrix);
+    leftLegUpper.matrix.scale(0.3, 0.5, 0.3);
+    leftLegUpper.render()
+
+    // Left Lower Leg - connected to upper leg
+    var leftLegLower = new Cylinder();
+    leftLegLower.color = koalaDarkGray;
+    leftLegLower.matrix = new Matrix4(leftLegUpperCoords);
+    leftLegLower.matrix.translate(0, 0.8, 0);
+    leftLegLower.matrix.rotate(g_leftLegLower, 0, 0.1, 0);
+    var leftLegLowerCoords = new Matrix4(leftLegLower.matrix);
+    leftLegLower.matrix.scale(0.25, -0.35, 0.25);
+    leftLegLower.render();
+
+    // Left Foot - connected to lower leg
+    var leftFoot = new Sphere();
+    leftFoot.color = koalaBlack;
+    leftFoot.matrix = new Matrix4(leftLegLowerCoords);
+    leftFoot.matrix.translate(0, 0.25, 0);
+    leftFoot.matrix.scale(0.35, 0.3, 0.35);
+    leftFoot.render();
+
+    // Right Upper Leg
+    var rightLegUpper = new Cylinder();
+    rightLegUpper.color = koalaGray;
+    rightLegUpper.matrix = new Matrix4(bodyCoords);
+    rightLegUpper.matrix.translate(0.5, 0.0, 0);
+    rightLegUpper.matrix.rotate(180, 1, 0, 0);
+    rightLegUpper.matrix.rotate(g_rightLegUpper, 1, 0, 0);
+    var rightLegUpperCoords = new Matrix4(rightLegUpper.matrix);
+    rightLegUpper.matrix.scale(0.3, 0.5, 0.3);
+    rightLegUpper.render();
+
+    // Right Lower Leg
+    var rightLegLower = new Cylinder();
+    rightLegLower.color = koalaDarkGray;
+    rightLegLower.matrix = new Matrix4(rightLegUpperCoords);
+    rightLegLower.matrix.translate(0, 0.8, 0);;
+    rightLegLower.matrix.rotate(g_rightLegLower, 0, 0.1, 0);
+    var rightLegLowerCoords = new Matrix4(rightLegLower.matrix);
+    rightLegLower.matrix.scale(0.25, -0.35, 0.25);
+    rightLegLower.render();
+
+
+    // Right Foot
+    var rightFoot = new Sphere();
+    rightFoot.color = koalaBlack;
+    rightFoot.matrix = new Matrix4(rightLegLowerCoords);
+    rightFoot.matrix.translate(0, 0.25, 0);
+    rightFoot.matrix.scale(0.35, 0.3, 0.35);
+    rightFoot.render();
+
 }
 
 function sendTextToHTML(text, htmlID) {
