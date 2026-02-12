@@ -185,7 +185,7 @@ function SendTextureToGLSL(image) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     // Set the texture unit 0 to the sampler
-    gl.uniform1i(u_whichTexture, this.textureNum);
+    gl.uniform1i(u_Sampler0, 0);
 
     //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
 
