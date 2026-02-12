@@ -272,6 +272,7 @@ function main() {
         }
     };
 
+    document.onkeydown = onkeydown;
 
     initTextures(gl, 0);
 
@@ -431,7 +432,32 @@ function updateAnimationAngles() {
 var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, -100];
 var g_up = [0, 1, 0];
+/*
 
+callcualting
+
+// this one is eye and the oject in the same line, we close the object
+eye -->(d) at; d = at - eye; 
+
+d = d.narmalized ;
+eye = yey + d; 
+
+// this one is eye is focus the object(at), but go the other way, like left
+'A' = left{
+ d = at - eye;
+ left = d * up ;
+}
+
+//  keep they eye point, but look other way, like s degree
+atp = drr = at eye;
+r = √ ((dx)^2 + (dy)^2)
+theta = artan(yx);
+
+theta = theta - s dregee
+newx = r * cos(theta)
+newy = r * sin(theta)
+d = (newx, newy)
+*/
 function renderAllshapes() {
 
     var startTime = performance.now();
