@@ -8,9 +8,10 @@ var VSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
-  uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
-    void main() {
+  uniform mat4 u_ViewMatrix;
+  void main() {
+    //gl_Position =u_ProjectionMatrix * u_ViewMatrix *  u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
   }`
@@ -20,9 +21,12 @@ var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
+  uniform sampler2D u_Sampler0;
+
   void main() {
    gl_FragColor = u_FragColor;
    gl_FragColor = vec4(v_UV,1.0,1.0);
+   gl_FragColor = texture2D(u_Sampler0, v_UV);
   }`
 
 // Constants
@@ -42,6 +46,7 @@ let u_ModelMatrix;
 let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
+let u_Sampler0;
 
 
 let g_selectSize = 10.0;
@@ -132,15 +137,60 @@ function connetVariablesToGLSL() {
         console.log('Failed to get the storage location of u_ViewMatrix');
         return;
     }
-    //var identiyM = new Matrix4();
-    // gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
-    /*
-    // Get the storage location of u_Size
-    u_Size = gl.getUniformLocation(gl.program, 'u_Size');
-    if (!u_Size) {
-        console.log('Failed to get the storage location of u_Size');
+
+    u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+    if (!u_ProjectionMatrix) {
+        console.log('Failed to get the storage location of u_ProjectionMatrix');
         return;
-    }*/
+    }
+    var u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+    if (!u_Sampler0) {
+        console.log('Failed to get the storage location of u_Sampler0');
+        return false;
+    }
+}
+
+
+function initTextures() {
+    var image = new Image();  // Create the image object
+    if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+    }
+    // Register the event handler to be called on loading an image
+    image.onload = function () { SendTextureToGLSL(image); };
+    // Tell the browser to load an image
+    image.src = '../resources/sky.jpg';
+
+    return true;
+}
+
+function SendTextureToGLSL(image) {
+
+    var texture = gl.createTexture();   // Create a texture object
+    if (!texture) {
+        console.log('Failed to create the texture object');
+        return false;
+    }
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+    // Enable texture unit0
+    gl.activeTexture(gl.TEXTURE0);
+    // Bind the texture object to the target
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // Set the texture parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // Set the texture image
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    // Set the texture unit 0 to the sampler
+    gl.uniform1i(u_Sampler0, 0);
+
+    //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
+
+    //gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
+    console.log('finished loadTexture');
 }
 
 
@@ -217,6 +267,8 @@ function main() {
         }
     };
 
+
+    initTextures(gl, 0);
 
     // Specify the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -396,7 +448,7 @@ function renderAllshapes() {
     
       var body = new Cube();
       body.color = [1.0, 0.0, 0.0, 1.0];
-      body.matrix.translate(-.25, -.5, 0.0);
+      body.matrix.translate(0, 0, 0.0);
       body.matrix.scale (0.5, 0.3, 0.5);
       body.render(); 
 
