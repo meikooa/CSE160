@@ -272,7 +272,7 @@ function main() {
         }
     };
 
-    document.onkeydown = onkeydown;
+    document.onkeydown = keydown; // get keybord
 
     initTextures(gl, 0);
 
@@ -429,8 +429,18 @@ function updateAnimationAngles() {
     }
 }
 
+function keydown(ev) {
+    if (ev.keyCode == 68) { // keyboard 'd'
+        g_eye[0] += 0.2;
+    } else if (ev.keyCode == 65) { // keyboard 'a'
+        g_eye[0] -= 0.2;
+    }
+    renderAllshapes();
+    console.log(ev.keyCode);
+}
+
 var g_eye = [0, 0.5, 3];
-var g_at = [0, 0, -100];
+var g_at = [0, 0, 0];
 var g_up = [0, 1, 0];
 /*
 
