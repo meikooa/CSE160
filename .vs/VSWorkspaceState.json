@@ -1,9 +1,14 @@
 {
   "ExpandedNodes": [
     "",
+    "\\Asgn1\\src",
     "\\Asgn2",
     "\\Asgn2\\lib",
-    "\\Asgn2\\src"
+    "\\Asgn2\\src",
+    "\\Asgn3",
+    "\\Asgn3\\lib",
+    "\\Asgn3\\src"
   ],
+  "SelectedNode": "\\Asgn3\\src\\Work1BackUP.JS",
   "PreviewInSolutionExplorer": false
 }

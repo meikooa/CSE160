@@ -2,19 +2,27 @@
 // Vertex shader program
 //update
 var VSHADER_SOURCE = `
+  precision mediump float;
   attribute vec4 a_Position;
+  attribute vec2 a_UV;
+  varying vec2 v_UV;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
+  uniform mat4 u_ViewMatrix;
+  uniform mat4 u_ProjectionMatrix;
     void main() {
     gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    v_UV = a_UV;
   }`
 
 // Fragment shader program
 var FSHADER_SOURCE = `
   precision mediump float;
+  varying vec2 v_UV;
   uniform vec4 u_FragColor;
   void main() {
    gl_FragColor = u_FragColor;
+   gl_FragColor = vec4(v_UV,1.0,1.0);
   }`
 
 // Constants
@@ -26,9 +34,17 @@ const CIRCLE = 2;
 let canvas;
 let gl;
 let a_Position;
+let a_UV;
+
 let u_FragColor;
-let g_selectSize = 10.0;
 let u_Size;
+let u_ModelMatrix;
+let u_GlobalRotateMatrix;
+let u_ViewMatrix;
+let u_ProjectionMatrix;
+
+
+let g_selectSize = 10.0;
 let g_selectType = POINT;
 let g_segCount = 20;
 let g_globalAngle = 0;
@@ -86,6 +102,12 @@ function connetVariablesToGLSL() {
         return;
     }
 
+    a_UV = gl.getAttribLocation(gl.program, 'a_UV');
+    if (a_UV < 0) {
+        console.log('Failed to get the storage location of a_UV');
+        return;
+    }
+
     // Get the storage location of u_FragColor
     u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
     if (!u_FragColor) {
@@ -102,6 +124,12 @@ function connetVariablesToGLSL() {
     u_GlobalRotateMatrix = gl.getUniformLocation(gl.program, 'u_GlobalRotateMatrix');
     if (!u_GlobalRotateMatrix) {
         console.log('Failed to get the storage location of u_GlobalRotateMatrix');
+        return;
+    }
+
+    u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
+    if (!u_ViewMatrix) {
+        console.log('Failed to get the storage location of u_ViewMatrix');
         return;
     }
     //var identiyM = new Matrix4();
@@ -365,12 +393,12 @@ function renderAllshapes() {
     //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
     //draw a cude
-    /*
+    
       var body = new Cube();
       body.color = [1.0, 0.0, 0.0, 1.0];
       body.matrix.translate(-.25, -.5, 0.0);
       body.matrix.scale (0.5, 0.3, 0.5);
-      body.render(); */
+      body.render(); 
 
 
     // left arm
@@ -416,7 +444,7 @@ leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);*/
     headSphere.matrix.scale(0.2, 0.2, 0.2);
     headSphere.render();*/
 
-    drawKoala();
+    //drawKoala();
 
 
 
