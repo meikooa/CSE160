@@ -555,6 +555,14 @@ function renderAllshapes() {
     body.render();
 
 
+    //draw the floor
+    var floor = new Cube();
+    floor.color = [1.0, 0.0, 0.0, 1.0];
+    floor.matrix.translate(0, -0.5, 0.0);
+    floor.matrix.scale(10, 0, 10);
+    floor.matrix.translate(-0.5, 0, -0.5);
+    floor.textureNum = -1;
+    floor.render();
     //drawKoala();
 
 
