@@ -20,34 +20,67 @@ class Cube {
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-        //front of cube
-        drawTriangle3DUV([0, 0, 0, 1, 1, 0, 1, 0, 0], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([0, 0, 0, 0, 1, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1]);
+        drawTriangle3DUV(
+            [0, 0, 0, 1, 1, 0, 1, 0, 0],
+            [0, 0, 1, 1, 1, 0]
+        );
+        // Triangle 2: bottom-left, top-left, top-right
+        drawTriangle3DUV(
+            [0, 0, 0, 0, 1, 0, 1, 1, 0],
+            [0, 0, 0, 1, 1, 1]
+        );
 
-        //drawTriangle([0,0,0,  1,1,0,  1,0,0]);
-        //drawTriangle([0,0,0, 0,1,0, 1,1,0]);
-
+        // Slightly darker for other faces
         gl.uniform4f(u_FragColor, rgba[0] * .9, rgba[1] * .9, rgba[2] * .9, rgba[3]);
 
-        //top of cude
-        drawTriangle3DUV([0, 1, 0, 0, 1, 1, 1, 1, 1], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([0, 1, 0, 1, 1, 1, 1, 1, 0], [0, 0, 0, 1, 1, 1]);
+        // TOP FACE (facing +Y)
+        drawTriangle3DUV(
+            [0, 1, 0, 0, 1, 1, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1]
+        );
+        drawTriangle3DUV(
+            [0, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 0, 1, 1, 1, 0]
+        );
 
-        // Back face
-        drawTriangle3DUV([0, 0, 1, 1, 0, 1, 1, 1, 1], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([0, 0, 1, 1, 1, 1, 0, 1, 1], [0, 0, 0, 1, 1, 1]);
+        // BACK FACE (facing -Z)
+        drawTriangle3DUV(
+            [1, 0, 1, 0, 1, 1, 1, 1, 1],
+            [0, 0, 1, 1, 0, 1]
+        );
+        drawTriangle3DUV(
+            [1, 0, 1, 0, 0, 1, 0, 1, 1],
+            [0, 0, 1, 0, 1, 1]
+        );
 
-        // Bottom face
-        drawTriangle3DUV([0, 0, 0, 1, 0, 0, 1, 0, 1], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([0, 0, 0, 1, 0, 1, 0, 0, 1], [0, 0, 0, 1, 1, 1]);
+        // BOTTOM FACE (facing -Y)
+        drawTriangle3DUV(
+            [0, 0, 0, 1, 0, 0, 1, 0, 1],
+            [0, 0, 1, 0, 1, 1]
+        );
+        drawTriangle3DUV(
+            [0, 0, 0, 1, 0, 1, 0, 0, 1],
+            [0, 0, 1, 1, 0, 1]
+        );
 
-        // Left face
-        drawTriangle3DUV([0, 0, 0, 0, 1, 0, 0, 1, 1], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([0, 0, 0, 0, 1, 1, 0, 0, 1], [0, 0, 0, 1, 1, 1]);
+        // LEFT FACE (facing -X)
+        drawTriangle3DUV(
+            [0, 0, 0, 0, 1, 1, 0, 1, 0],
+            [0, 0, 1, 1, 1, 0]
+        );
+        drawTriangle3DUV(
+            [0, 0, 0, 0, 0, 1, 0, 1, 1],
+            [0, 0, 0, 1, 1, 1]
+        );
 
-        // Right face
-        drawTriangle3DUV([1, 0, 0, 1, 1, 0, 1, 1, 1], [1, 0, 0, 1, 1, 1]);
-        drawTriangle3DUV([1, 0, 0, 1, 1, 1, 1, 0, 1], [0, 0, 0, 1, 1, 1]);
-
+        // RIGHT FACE (facing +X)
+        drawTriangle3DUV(
+            [1, 0, 0, 1, 1, 0, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1]
+        );
+        drawTriangle3DUV(
+            [1, 0, 0, 1, 1, 1, 1, 0, 1],
+            [0, 0, 1, 1, 1, 0]
+        );
     }
 }
