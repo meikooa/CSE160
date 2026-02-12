@@ -433,26 +433,16 @@ function renderAllshapes() {
 
     // Clear <canvas> with depth buffer
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Set up projection matrix (perspective)
     var projMatrix = new Matrix4();
-    projMatrix.setPerspective(60, canvas.width / canvas.height, 0.1, 100);
     gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
 
-    // Set up view matrix (camera position)
-    var viewMatrix = new Matrix4();
-    viewMatrix.setLookAt(
-        0, 0.5, 3,   // eye position (camera looking from here)
-        0, 0, 0,     // look at point (looking at origin)
-        0, 1, 0      // up direction
-    );
-    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+    var viewMatirx = new Matrix4();
+    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatirx.elements);
 
-    // Set up global rotation matrix (for mouse/angle controls)
-    var globalRotMat = new Matrix4()
-        .rotate(g_globalAngle, 0, 1, 0)
-        .rotate(g_mouseXRotation, 1, 0, 0)
-        .rotate(g_mouseYRotation, 0, 1, 0);
+    var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
     //Draw a test triangle
