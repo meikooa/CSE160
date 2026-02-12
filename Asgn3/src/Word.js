@@ -427,6 +427,11 @@ function updateAnimationAngles() {
         g_koalaRotation = 0;
     }
 }
+
+var g_eye = [0, 0.5, 3];
+var g_at = [0, 0, -100];
+var g_up = [0, 1, 0];
+
 function renderAllshapes() {
 
     var startTime = performance.now();
@@ -442,9 +447,9 @@ function renderAllshapes() {
     // Set up view matrix (camera position)
     var viewMatrix = new Matrix4();
     viewMatrix.setLookAt(
-        0, 0.5, 3,   // eye position (camera looking from here)
-        0, 0, 0,     // look at point (looking at origin)
-        0, 1, 0      // up direction
+        g_eye[0], g_eye[1], g_eye[2],   // eye position (camera looking from here)
+        g_at[0], g_at[1], g_at[2],     // look at point (looking at origin)
+        g_up[0], g_up[1], g_up[2]      // up direction
     );
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
 
