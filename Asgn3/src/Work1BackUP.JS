@@ -1,6 +1,7 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
 //update
+//backup with  video 3.4
 var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
@@ -11,8 +12,8 @@ var VSHADER_SOURCE = `
   uniform mat4 u_ProjectionMatrix;
   uniform mat4 u_ViewMatrix;
   void main() {
-    //gl_Position =u_ProjectionMatrix * u_ViewMatrix *  u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
-    gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix *  u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    //gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
   }`
 
@@ -22,11 +23,19 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform int u_whichTexture;
 
   void main() {
-   gl_FragColor = u_FragColor;
-   gl_FragColor = vec4(v_UV,1.0,1.0);
-   gl_FragColor = texture2D(u_Sampler0, v_UV);
+   if(u_whichTexture == -2){ // Use color
+       gl_FragColor = u_FragColor;
+   }else if(u_whichTexture == -1){ // use UV DEBUG
+      gl_FragColor = vec4(v_UV,1.0,1.0);
+
+   }else if(u_whichTexture == 0){
+       gl_FragColor = texture2D(u_Sampler0, v_UV);
+   }else{ // Error, put redlish
+       gl_FragColor = vec4(1,0.2,0.2,1);
+   }
   }`
 
 // Constants
@@ -47,6 +56,7 @@ let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_Sampler0;
+let u_whichTexture;
 
 
 let g_selectSize = 10.0;
@@ -143,11 +153,15 @@ function connetVariablesToGLSL() {
         console.log('Failed to get the storage location of u_ProjectionMatrix');
         return;
     }
-    var u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
     if (!u_Sampler0) {
         console.log('Failed to get the storage location of u_Sampler0');
         return false;
     }
+    u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
+    if (u_whichTexture === null) console.log('Failed to get u_whichTexture');
+
+    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
 }
 
 
@@ -166,32 +180,24 @@ function initTextures() {
 }
 
 function SendTextureToGLSL(image) {
+    const texture = gl.createTexture();
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
-    var texture = gl.createTexture();   // Create a texture object
-    if (!texture) {
-        console.log('Failed to create the texture object');
-        return false;
-    }
+    gl.activeTexture(gl.TEXTURE0);                 // activate unit 0
+    gl.bindTexture(gl.TEXTURE_2D, texture);       // bind texture object
 
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-    // Enable texture unit0
-    gl.activeTexture(gl.TEXTURE0);
-    // Bind the texture object to the target
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    // Set the texture parameters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    // Set the texture image
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
-    // Set the texture unit 0 to the sampler
+    // tell the shader sampler to use texture unit 0
     gl.uniform1i(u_Sampler0, 0);
 
-    //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
-
-    //gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
     console.log('finished loadTexture');
 }
+
 
 
 let g_selectedColor = [1.0, 1.0, 1.0, 1.0]; //White
@@ -425,16 +431,25 @@ function updateAnimationAngles() {
 function renderAllshapes() {
 
     var startTime = performance.now();
-    // Clear <canvas>
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
-    /*
-    //var len = g_points.length;
-    var len = g_shapesList.length;
-    for(var i = 0; i < len; i++) {
-  
-        g_shapesList[i].render();
-      }*/
+    // Clear <canvas> with depth buffer
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Set up projection matrix (perspective)
+    var projMatrix = new Matrix4();
+    projMatrix.setPerspective(60, canvas.width / canvas.height, 0.1, 100);
+    gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
+
+    // Set up view matrix (camera position)
+    var viewMatrix = new Matrix4();
+    viewMatrix.setLookAt(
+        0, 0.5, 3,   // eye position (camera looking from here)
+        0, 0, 0,     // look at point (looking at origin)
+        0, 1, 0      // up direction
+    );
+    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+
+    // Set up global rotation matrix (for mouse/angle controls)
     var globalRotMat = new Matrix4()
         .rotate(g_globalAngle, 0, 1, 0)
         .rotate(g_mouseXRotation, 1, 0, 0)
@@ -444,57 +459,15 @@ function renderAllshapes() {
     //Draw a test triangle
     //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
-    //draw a cude
+    //draw a cube
 
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
     body.matrix.scale(0.5, 0.3, 0.5);
+    body.textureNum = 0;
     body.render();
 
-
-    // left arm
-    /*
-var leftArm = new Cube();
-leftArm.color = [1.0, 1.0, 0.0, 1.0];
-leftArm.matrix.setTranslate(0, -0.5, 0.0);
-leftArm.matrix.rotate(-5, 1, 0, 0);
-leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);*/
-    /*
-    if (g_yellowAnimation) {
-        leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
-
-    } else {
-        leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
-    }*/
-    //leftArm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
-    //var yellowCoordinatesMat =new Matrix4(leftArm.matrix);
-    //leftArm.matrix.scale(0.25, 0.7, 0.5);
-    //letArm.matrix.translate(-5, 0, 0);
-    //leftArm.render();
-    //var duration = performance.now() - startTime;
-
-    /*
-    var box = new Cube();
-    box.color = [1,0,1,1];
-    box.matrix = yellowCoordinatesMat; // box 就会和 leftarm一起旋转 
-    box.matrix.translate(0, 0.7, 0);
-    
-    box.matrix.setTranslate(-0.1,0.1,0,0);
-    box.matrix.rotate(-30,1,0,0);
-    box.matrix.scale (-0.5,0,0);
-    //letArm.matrix.translate(-5, 0, 0);
-
-
-    box.render();*/
-
-
-    // Replace or add to your renderAllshapes() function
-    /*
-    headSphere.color = [1.0, 0.8, 0.6, 1.0];
-    headSphere.matrix.setTranslate(0, 0.5, 0);
-    headSphere.matrix.scale(0.2, 0.2, 0.2);
-    headSphere.render();*/
 
     //drawKoala();
 
