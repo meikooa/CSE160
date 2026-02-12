@@ -506,16 +506,23 @@ function renderAllshapes() {
     //Draw a test triangle
     //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
-    //draw a cube
-
+    //draw a test cube
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
     body.matrix.scale(0.5, 0.3, 0.5);
     body.textureNum = 0;
     body.render();
-
-
+    /*
+    //draw a test Floor
+    var ground = new Cube();
+    ground.color = [1.0, 0.0, 0.0, 1.0];
+    ground.matrix.translate(-10.0, -0.75, 0.0);
+    ground.matrix.scale(10, 0, 10);
+    ground.matrix.translate(0.5, 0.0, -0.5);
+    ground.textureNum = -1;
+    ground.render();
+    */
     //drawKoala();
 
 
