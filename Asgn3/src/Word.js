@@ -430,13 +430,52 @@ function updateAnimationAngles() {
 }
 
 function keydown(ev) {
-    if (ev.keyCode == 68) { // keyboard 'd'
-        g_eye[0] += 0.2;
-    } else if (ev.keyCode == 65) { // keyboard 'a'
-        g_eye[0] -= 0.2;
+    // Calculate forward and right vectors
+    let forward = [g_at[0] - g_eye[0], g_at[1] - g_eye[1], g_at[2] - g_eye[2]];
+    let fLen = Math.sqrt(forward[0] ** 2 + forward[1] ** 2 + forward[2] ** 2);
+    forward = [forward[0] / fLen, forward[1] / fLen, forward[2] / fLen];
+
+    let right = [
+        forward[1] * g_up[2] - forward[2] * g_up[1],
+        forward[2] * g_up[0] - forward[0] * g_up[2],
+        forward[0] * g_up[1] - forward[1] * g_up[0]
+    ];
+    let rLen = Math.sqrt(right[0] ** 2 + right[1] ** 2 + right[2] ** 2);
+    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+
+    let speed = 0.2;
+
+    if (ev.keyCode == 68) { // D - right
+        g_eye[0] += right[0] * speed;
+        g_eye[1] += right[1] * speed;
+        g_eye[2] += right[2] * speed;
+        g_at[0] += right[0] * speed;
+        g_at[1] += right[1] * speed;
+        g_at[2] += right[2] * speed;
+    } else if (ev.keyCode == 65) { // A - left
+        g_eye[0] -= right[0] * speed;
+        g_eye[1] -= right[1] * speed;
+        g_eye[2] -= right[2] * speed;
+        g_at[0] -= right[0] * speed;
+        g_at[1] -= right[1] * speed;
+        g_at[2] -= right[2] * speed;
+    } else if (ev.keyCode == 87) { // W - forward
+        g_eye[0] += forward[0] * speed;
+        g_eye[1] += forward[1] * speed;
+        g_eye[2] += forward[2] * speed;
+        g_at[0] += forward[0] * speed;
+        g_at[1] += forward[1] * speed;
+        g_at[2] += forward[2] * speed;
+    } else if (ev.keyCode == 83) { // S - backward
+        g_eye[0] -= forward[0] * speed;
+        g_eye[1] -= forward[1] * speed;
+        g_eye[2] -= forward[2] * speed;
+        g_at[0] -= forward[0] * speed;
+        g_at[1] -= forward[1] * speed;
+        g_at[2] -= forward[2] * speed;
     }
+
     renderAllshapes();
-    console.log(ev.keyCode);
 }
 
 var g_eye = [0, 0.5, 3];
@@ -506,23 +545,16 @@ function renderAllshapes() {
     //Draw a test triangle
     //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
-    //draw a test cube
+    //draw a cube
+
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
     body.matrix.scale(0.5, 0.3, 0.5);
     body.textureNum = 0;
     body.render();
-    /*
-    //draw a test Floor
-    var ground = new Cube();
-    ground.color = [1.0, 0.0, 0.0, 1.0];
-    ground.matrix.translate(-10.0, -0.75, 0.0);
-    ground.matrix.scale(10, 0, 10);
-    ground.matrix.translate(0.5, 0.0, -0.5);
-    ground.textureNum = -1;
-    ground.render();
-    */
+
+
     //drawKoala();
 
 
