@@ -22,11 +22,19 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform int u_whichTexture;
 
   void main() {
-   gl_FragColor = u_FragColor;
-   gl_FragColor = vec4(v_UV,1.0,1.0);
-   gl_FragColor = texture2D(u_Sampler0, v_UV);
+   if(u_whichTexture == -2){ // Use color
+       gl_FragColor = u_FragColor;
+   }else if(u_whichTexture == -1){ // use UV DEBUG
+      gl_FragColor = vec4(v_UV,1.0,1.0);
+
+   }else if(u_whichTexture == 0){
+       gl_FragColor = texture2D(u_Sampler0, v_UV);
+   }else{ // Error, put redlish
+       gl_FragColor = vec4(1,0.2,0.2,1);
+   }
   }`
 
 // Constants
@@ -47,6 +55,7 @@ let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_Sampler0;
+let u_whichTexture;
 
 
 let g_selectSize = 10.0;
@@ -143,11 +152,17 @@ function connetVariablesToGLSL() {
         console.log('Failed to get the storage location of u_ProjectionMatrix');
         return;
     }
-    var u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+
+    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
     if (!u_Sampler0) {
         console.log('Failed to get the storage location of u_Sampler0');
         return false;
     }
+    u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
+    if (u_whichTexture === null) console.log('Failed to get u_whichTexture');
+    /*
+    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+    if (u_Sampler0 === null) console.log('Failed to get u_Sampler0');*/
 }
 
 
@@ -166,32 +181,24 @@ function initTextures() {
 }
 
 function SendTextureToGLSL(image) {
+    const texture = gl.createTexture();
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
-    var texture = gl.createTexture();   // Create a texture object
-    if (!texture) {
-        console.log('Failed to create the texture object');
-        return false;
-    }
+    gl.activeTexture(gl.TEXTURE0);                 // activate unit 0
+    gl.bindTexture(gl.TEXTURE_2D, texture);       // bind texture object
 
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-    // Enable texture unit0
-    gl.activeTexture(gl.TEXTURE0);
-    // Bind the texture object to the target
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    // Set the texture parameters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    // Set the texture image
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
-    // Set the texture unit 0 to the sampler
+    // tell the shader sampler to use texture unit 0
     gl.uniform1i(u_Sampler0, 0);
 
-    //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
-
-    //gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
     console.log('finished loadTexture');
 }
+
 
 
 let g_selectedColor = [1.0, 1.0, 1.0, 1.0]; //White
