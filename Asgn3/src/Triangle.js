@@ -109,7 +109,7 @@ function drawTriangle(vertices) {
 }
 
 var g_vertexBuffer = null;
-function initTriangle3D() {
+function drawTriangle3D(vertices) {
     var n = 3; // The number of vertices
 
     // Create a buffer object
@@ -133,10 +133,11 @@ function initTriangle3D() {
 
 }
 
+/*
 function drawTriangle3D(vertices) {
     var n = vertices.length / 3; // The number of vertices
 
     if(g_vertexBuffer==null){
         initTriangle3D();
     }
-}
+}*/
