@@ -11,41 +11,6 @@ class Cube {
     }
 
     render() {
-        //let xy = this.position;
-        var rgba = this.color;
-        //let size = this.size;
-        //this.segments = g_segCount;
-
-        gl.uniform1i(u_whichTexture, this.textureNum); // set mode for this cube
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
-
-        var allverts =[];
-
-        allverts = allverts.concat(
-            [0, 0, 0, 1, 1, 0, 1, 0, 0],
-            [0, 0, 0, 0, 1, 0, 1, 1, 0],
-
-            [0, 1, 0, 0, 1, 1, 1, 1, 1],
-            [0, 1, 0, 1, 1, 1, 1, 1, 0],
-
-            [1, 0, 1, 0, 1, 1, 1, 1, 1],
-            [1, 0, 1, 0, 0, 1, 0, 1, 1],
-
-            [0, 0, 0, 1, 0, 0, 1, 0, 1],
-            [0, 0, 0, 1, 0, 1, 0, 0, 1],
-
-            [0, 0, 0, 0, 1, 1, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1, 0, 1, 1],
-
-            [1, 0, 0, 1, 1, 0, 1, 1, 1],
-            [1, 0, 0, 1, 1, 1, 1, 0, 1]
-        );
-
-        drawTriangle3DUV(allverts);
-
-        /*
-
 
         //let xy = this.position;
         var rgba = this.color;
@@ -117,7 +82,7 @@ class Cube {
         drawTriangle3DUV(
             [1, 0, 0, 1, 1, 1, 1, 0, 1],
             [0, 0, 1, 1, 1, 0]
-        );*/
+        );
     }
 
     renderfast() {
