@@ -84,7 +84,7 @@ class Cube {
             [0, 0, 1, 1, 1, 0]
         );
     }
-
+/*
     renderfast() {
         //let xy = this.position;
         var rgba = this.color;
@@ -119,7 +119,7 @@ class Cube {
 
         drawTriangle3DUV(allverts);
 
-        /*
+        
 
         drawTriangle3DUV(
             [0, 0, 0, 1, 1, 0, 1, 0, 0],
@@ -182,6 +182,6 @@ class Cube {
         drawTriangle3DUV(
             [1, 0, 0, 1, 1, 1, 1, 0, 1],
             [0, 0, 1, 1, 1, 0]
-        );*/
-    }
+        );
+    }*/
 }
