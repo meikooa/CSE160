@@ -271,6 +271,7 @@ function renderAllshapes() {
         body.render(); 
 
 
+
         // left arm
     var leftArm = new Cube();
     leftArm.color = [1.0, 1.0, 0.0, 1.0];

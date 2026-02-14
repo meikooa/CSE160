@@ -481,32 +481,33 @@ function keydown(ev) {
 var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, 0];
 var g_up = [0, 1, 0];
-/*
+var g_map =[
+    [1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,1,1,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,1,0,0,1],
+    [1,0,0,0,0,0,0,1],
+];
 
-callcualting
-
-// this one is eye and the oject in the same line, we close the object
-eye -->(d) at; d = at - eye; 
-
-d = d.narmalized ;
-eye = yey + d; 
-
-// this one is eye is focus the object(at), but go the other way, like left
-'A' = left{
- d = at - eye;
- left = d * up ;
+function drawMap(){
+    for(x=0;x<32;x++){
+        for(y=0;y<32;y++){
+            if(x ==0 || x == 31 || y == 0 || y == 31){
+                        var body = new Cube();
+                        body.color = [1.0, 1.0, 1.0, 1.0];
+                        body.matrix.translate(0, -0.75, 0);
+                        body.matrix.scale(0.5, 0.5, 0.5);
+                        body.matrix.translate(x-16,-0.75,y-16);
+                        body.render();
+                
+            }
+        }
+    }
 }
 
-//  keep they eye point, but look other way, like s degree
-atp = drr = at eye;
-r = √ ((dx)^2 + (dy)^2)
-theta = artan(yx);
-
-theta = theta - s dregee
-newx = r * cos(theta)
-newy = r * sin(theta)
-d = (newx, newy)
-*/
 function renderAllshapes() {
 
     var startTime = performance.now();
@@ -563,12 +564,24 @@ function renderAllshapes() {
     floor.matrix.translate(-0.5, 0, -0.5);
     floor.textureNum = -1;
     floor.render();
+
+    
+    //draw the skye
+    var floor = new Cube();
+    floor.color = [1.0, 0.0, 0.0, 1.0];
+    floor.matrix.translate(-0.0, -1.5, -0.0);
+    floor.matrix.scale(50, 50, 50);
+    floor.matrix.translate(-0.5, 0, -0.5);
+    floor.textureNum = 0;
+    floor.render();
+
     //drawKoala();
+    drawMap();
 
 
 
     var duration = performance.now() - startTime;
-    //sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
+    sendTextToHTML(" fps: " + Math.floor(10000 / duration), "numdot");
 }
 function drawKoala() {
     // Koala colors

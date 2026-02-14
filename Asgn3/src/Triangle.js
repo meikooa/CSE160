@@ -108,7 +108,8 @@ function drawTriangle(vertices) {
 
 }
 
-function drawTriangle3D(vertices) {
+var g_vertexBuffer = null;
+function initTriangle3D() {
     var n = 3; // The number of vertices
 
     // Create a buffer object
@@ -130,4 +131,12 @@ function drawTriangle3D(vertices) {
 
     gl.drawArrays(gl.TRIANGLES, 0, n);
 
+}
+
+function drawTriangle3D(vertices) {
+    var n = vertices.length / 3; // The number of vertices
+
+    if(g_vertexBuffer==null){
+        initTriangle3D();
+    }
 }
