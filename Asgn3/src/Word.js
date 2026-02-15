@@ -21,6 +21,8 @@ var FSHADER_SOURCE = `
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
+  uniform sampler2D u_Sampler2;
+  uniform sampler2D u_Sampler3;
   uniform int u_whichTexture;
 
   void main() {
@@ -33,6 +35,10 @@ var FSHADER_SOURCE = `
        gl_FragColor = texture2D(u_Sampler0, v_UV);
    }else if(u_whichTexture == 1) {
       gl_FragColor = texture2D(u_Sampler1, v_UV);
+   }else if(u_whichTexture == 2) {
+      gl_FragColor = texture2D(u_Sampler2, v_UV);
+   }else if(u_whichTexture == 3) {
+      gl_FragColor = texture2D(u_Sampler3, v_UV);
    }else{ // Error, put redlish
        gl_FragColor = vec4(1,0.2,0.2,1);
    }
@@ -43,7 +49,7 @@ const POINT = 0;
 const TRIANGLE = 1;
 const CIRCLE = 2;
 
-// Global Vaiables
+// Global Variables
 let canvas;
 let gl;
 let a_Position;
@@ -57,8 +63,9 @@ let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_Sampler0;
 let u_Sampler1;
+let u_Sampler2;
+let u_Sampler3;
 let u_whichTexture;
-
 
 let g_selectSize = 10.0;
 let g_selectType = POINT;
@@ -95,6 +102,10 @@ let g_koalaRotation = 0;
 let g_cameraYaw = -90;   // Start looking down the -Z axis
 let g_cameraPitch = -10; // Start looking slightly down
 
+// Minecraft block selection
+// 2 = CanBreak_wall.jpg, 3 = rock.jpg, 4 = wood.png
+let g_selectedBlockType = 2; 
+
 // Minecraft world - 3D array to store cubes
 let g_map = [];
 for (let x = 0; x < 32; x++) {
@@ -102,7 +113,7 @@ for (let x = 0; x < 32; x++) {
     for (let y = 0; y < 32; y++) {
         g_map[x][y] = [];
         for (let z = 0; z < 32; z++) {
-            g_map[x][y][z] = 0; // 0 = empty, 1 = wall.jpg cube, 2 = CanBreak_wall.jpg cube
+            g_map[x][y][z] = 0; // 0 = empty, 1 = wall.jpg cube, 2 = CanBreak, 3 = rock, 4 = wood
         }
     }
 }
@@ -149,6 +160,12 @@ function connetVariablesToGLSL() {
     
     u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
     if (!u_Sampler1) return false;
+
+    u_Sampler2 = gl.getUniformLocation(gl.program, 'u_Sampler2');
+    if (!u_Sampler2) return false;
+
+    u_Sampler3 = gl.getUniformLocation(gl.program, 'u_Sampler3');
+    if (!u_Sampler3) return false;
     
     u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
     if (u_whichTexture === null) console.log('Failed to get u_whichTexture');
@@ -165,6 +182,16 @@ function initTextures() {
     image1.onload = function () { SendTextureToGLSL(image1, 1); };
     image1.src = 'CanBreak_wall.jpg';
 
+    var image2 = new Image();
+    if (!image2) return false;
+    image2.onload = function () { SendTextureToGLSL(image2, 2); };
+    image2.src = 'rock.jpg';
+
+    var image3 = new Image();
+    if (!image3) return false;
+    image3.onload = function () { SendTextureToGLSL(image3, 3); };
+    image3.src = 'wood.png';
+
     return true;
 }
 
@@ -180,6 +207,14 @@ function SendTextureToGLSL(image, texUnit) {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(u_Sampler1, 1);
+    } else if (texUnit === 2) {
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(u_Sampler2, 2);
+    } else if (texUnit === 3) {
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(u_Sampler3, 3);
     }
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -354,9 +389,21 @@ function updateAnimationAngles() {
 }
 
 // -------------------------------------------------------------
-// NEW: Unity-Style Sliding Movement
+// NEW: Unity-Style Sliding Movement & Block Selection
 // -------------------------------------------------------------
 function keydown(ev) {
+    // Check for block selection keys
+    if (ev.keyCode == 49) { // Key '1'
+        g_selectedBlockType = 2; // CanBreak_wall.jpg
+        console.log("Selected block: CanBreak_wall");
+    } else if (ev.keyCode == 50) { // Key '2'
+        g_selectedBlockType = 3; // rock.jpg
+        console.log("Selected block: Rock");
+    } else if (ev.keyCode == 51) { // Key '3'
+        g_selectedBlockType = 4; // wood.png
+        console.log("Selected block: Wood");
+    }
+
     // Calculate normalized Forward and Right vectors in XZ plane
     let forward = [g_at[0] - g_eye[0], 0, g_at[2] - g_eye[2]]; 
     let fLen = Math.sqrt(forward[0] ** 2 + forward[2] ** 2);
@@ -470,7 +517,7 @@ function placeCube() {
     if (x >= 0 && x < 32 && z >= 0 && z < 32) {
         for (let y = 0; y < 32; y++) {
             if (g_map[x][y][z] === 0) {
-                g_map[x][y][z] = 2; // Place a CanBreak_wall.jpg cube
+                g_map[x][y][z] = g_selectedBlockType; // Use the block currently selected
                 break;
             }
         }
@@ -543,7 +590,6 @@ function renderAllshapes() {
         .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
-    
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
@@ -575,9 +621,13 @@ function renderAllshapes() {
                     cube.matrix.translate(x, y, z);
                     
                     if (g_map[x][y][z] === 1) {
-                        cube.textureNum = 0; 
+                        cube.textureNum = 0; // wall.jpg
                     } else if (g_map[x][y][z] === 2) {
-                        cube.textureNum = 1; 
+                        cube.textureNum = 1; // CanBreak_wall.jpg
+                    } else if (g_map[x][y][z] === 3) {
+                        cube.textureNum = 2; // rock.jpg
+                    } else if (g_map[x][y][z] === 4) {
+                        cube.textureNum = 3; // wood.png
                     }
                     
                     cube.render();
