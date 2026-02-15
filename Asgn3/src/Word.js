@@ -58,6 +58,7 @@ let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_Sampler0;
+let u_Sampler1;
 let u_whichTexture;
 
 
@@ -91,6 +92,18 @@ let g_pokeStartTime = 0;
 let g_pokeDuration = 3.0; // 3 seconds for complete animation
 let g_fallOffset = 0;
 let g_koalaRotation = 0;
+
+// Minecraft world - 3D array to store cubes
+let g_map = [];
+for (let x = 0; x < 32; x++) {
+    g_map[x] = [];
+    for (let y = 0; y < 32; y++) {
+        g_map[x][y] = [];
+        for (let z = 0; z < 32; z++) {
+            g_map[x][y][z] = 0; // 0 = empty, 1 = wall.jpg cube, 2 = CanBreak_wall.jpg cube
+        }
+    }
+}
 
 function setupWebGL() {
     // Retrieve <canvas> element
@@ -160,33 +173,53 @@ function connetVariablesToGLSL() {
         console.log('Failed to get the storage location of u_Sampler0');
         return false;
     }
+    
+    u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
+    if (!u_Sampler1) {
+        console.log('Failed to get the storage location of u_Sampler1');
+        return false;
+    }
+    
     u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
     if (u_whichTexture === null) console.log('Failed to get u_whichTexture');
-
-    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
 }
 
 
 function initTextures() {
-    var image = new Image();  // Create the image object
-    if (!image) {
-        console.log('Failed to create the image object');
+    // Load texture 0 - wall.jpg
+    var image0 = new Image();
+    if (!image0) {
+        console.log('Failed to create image0 object');
         return false;
     }
-    // Register the event handler to be called on loading an image
-    image.onload = function () { SendTextureToGLSL(image); };
-    // Tell the browser to load an image
-    image.src = 'wall.jpg';
+    image0.onload = function () { SendTextureToGLSL(image0, 0); };
+    image0.src = 'wall.jpg';
+
+    // Load texture 1 - CanBreak_wall.jpg
+    var image1 = new Image();
+    if (!image1) {
+        console.log('Failed to create image1 object');
+        return false;
+    }
+    image1.onload = function () { SendTextureToGLSL(image1, 1); };
+    image1.src = 'CanBreak_wall.jpg';
 
     return true;
 }
 
-function SendTextureToGLSL(image) {
+function SendTextureToGLSL(image, texUnit) {
     const texture = gl.createTexture();
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
-    gl.activeTexture(gl.TEXTURE0);                 // activate unit 0
-    gl.bindTexture(gl.TEXTURE_2D, texture);       // bind texture object
+    if (texUnit === 0) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(u_Sampler0, 0);
+    } else if (texUnit === 1) {
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(u_Sampler1, 1);
+    }
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -194,10 +227,7 @@ function SendTextureToGLSL(image) {
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
-    // tell the shader sampler to use texture unit 0
-    gl.uniform1i(u_Sampler0, 0);
-
-    console.log('finished loadTexture');
+    console.log('finished loadTexture unit', texUnit);
 }
 
 
@@ -252,10 +282,21 @@ function main() {
                 g_pokeAnimation = true;
                 g_pokeStartTime = g_seconds;
             }
-        } else {
-            // For clicks not dragging, use the original click function
-            click(ev);
+        } else if (ev.button === 0) {
+            // Left click - place cube
+            placeCube();
+            renderAllshapes();
+        } else if (ev.button === 2) {
+            // Right click - delete cube
+            deleteCube();
+            renderAllshapes();
         }
+    };
+    
+    // Prevent right-click context menu
+    canvas.oncontextmenu = function(ev) {
+        ev.preventDefault();
+        return false;
     };
 
     canvas.onmousemove = function (ev) {
@@ -449,33 +490,61 @@ function keydown(ev) {
     let speed = 0.2;
 
     if (ev.keyCode == 68) { // D - right
-        g_eye[0] += right[0] * speed;
-        g_eye[1] += right[1] * speed;
-        g_eye[2] += right[2] * speed;
-        g_at[0] += right[0] * speed;
-        g_at[1] += right[1] * speed;
-        g_at[2] += right[2] * speed;
+        let newEye = [
+            g_eye[0] + right[0] * speed,
+            g_eye[1] + right[1] * speed,
+            g_eye[2] + right[2] * speed
+        ];
+        if (!checkCollision(newEye)) {
+            g_eye[0] = newEye[0];
+            g_eye[1] = newEye[1];
+            g_eye[2] = newEye[2];
+            g_at[0] += right[0] * speed;
+            g_at[1] += right[1] * speed;
+            g_at[2] += right[2] * speed;
+        }
     } else if (ev.keyCode == 65) { // A - left
-        g_eye[0] -= right[0] * speed;
-        g_eye[1] -= right[1] * speed;
-        g_eye[2] -= right[2] * speed;
-        g_at[0] -= right[0] * speed;
-        g_at[1] -= right[1] * speed;
-        g_at[2] -= right[2] * speed;
+        let newEye = [
+            g_eye[0] - right[0] * speed,
+            g_eye[1] - right[1] * speed,
+            g_eye[2] - right[2] * speed
+        ];
+        if (!checkCollision(newEye)) {
+            g_eye[0] = newEye[0];
+            g_eye[1] = newEye[1];
+            g_eye[2] = newEye[2];
+            g_at[0] -= right[0] * speed;
+            g_at[1] -= right[1] * speed;
+            g_at[2] -= right[2] * speed;
+        }
     } else if (ev.keyCode == 87) { // W - forward
-        g_eye[0] += forward[0] * speed;
-        g_eye[1] += forward[1] * speed;
-        g_eye[2] += forward[2] * speed;
-        g_at[0] += forward[0] * speed;
-        g_at[1] += forward[1] * speed;
-        g_at[2] += forward[2] * speed;
+        let newEye = [
+            g_eye[0] + forward[0] * speed,
+            g_eye[1] + forward[1] * speed,
+            g_eye[2] + forward[2] * speed
+        ];
+        if (!checkCollision(newEye)) {
+            g_eye[0] = newEye[0];
+            g_eye[1] = newEye[1];
+            g_eye[2] = newEye[2];
+            g_at[0] += forward[0] * speed;
+            g_at[1] += forward[1] * speed;
+            g_at[2] += forward[2] * speed;
+        }
     } else if (ev.keyCode == 83) { // S - backward
-        g_eye[0] -= forward[0] * speed;
-        g_eye[1] -= forward[1] * speed;
-        g_eye[2] -= forward[2] * speed;
-        g_at[0] -= forward[0] * speed;
-        g_at[1] -= forward[1] * speed;
-        g_at[2] -= forward[2] * speed;
+        let newEye = [
+            g_eye[0] - forward[0] * speed,
+            g_eye[1] - forward[1] * speed,
+            g_eye[2] - forward[2] * speed
+        ];
+        if (!checkCollision(newEye)) {
+            g_eye[0] = newEye[0];
+            g_eye[1] = newEye[1];
+            g_eye[2] = newEye[2];
+            g_at[0] -= forward[0] * speed;
+            g_at[1] -= forward[1] * speed;
+            g_at[2] -= forward[2] * speed;
+        }
     } else if (ev.keyCode == 81) { // Q - turn left
     rotateCamera(5);   // rotate 5 degrees left
     } else if (ev.keyCode == 69) { // E - turn right
@@ -504,20 +573,116 @@ function rotateCamera(angle) {
     g_at[2] = g_eye[2] + newZ;
 }
 
+// Check if position collides with any cube
+function checkCollision(pos) {
+    let x = Math.floor(pos[0]);
+    let y = Math.floor(pos[1]);
+    let z = Math.floor(pos[2]);
+    
+    if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
+        return g_map[x][y][z] !== 0; // collision if there's a cube
+    }
+    return false;
+}
+
+// Get cube position in front of camera
+function getCubeInFront() {
+    let forward = [
+        g_at[0] - g_eye[0],
+        g_at[1] - g_eye[1],
+        g_at[2] - g_eye[2]
+    ];
+    
+    // Check along ray from eye to 5 units away
+    for (let dist = 0.5; dist < 5; dist += 0.1) {
+        let checkPos = [
+            g_eye[0] + forward[0] * dist,
+            g_eye[1] + forward[1] * dist,
+            g_eye[2] + forward[2] * dist
+        ];
+        
+        let x = Math.floor(checkPos[0]);
+        let y = Math.floor(checkPos[1]);
+        let z = Math.floor(checkPos[2]);
+        
+        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
+            if (g_map[x][y][z] !== 0) {
+                return {x, y, z, dist, exists: true};
+            }
+        }
+    }
+    return {exists: false};
+}
+
+// Place cube (called by mouse click)
+function placeCube() {
+    let target = getCubeInFront();
+    
+    if (target.exists) {
+        // Place cube one step before the hit cube
+        let forward = [
+            g_at[0] - g_eye[0],
+            g_at[1] - g_eye[1],
+            g_at[2] - g_eye[2]
+        ];
+        
+        let placePos = [
+            g_eye[0] + forward[0] * (target.dist - 0.6),
+            g_eye[1] + forward[1] * (target.dist - 0.6),
+            g_eye[2] + forward[2] * (target.dist - 0.6)
+        ];
+        
+        let x = Math.floor(placePos[0]);
+        let y = Math.floor(placePos[1]);
+        let z = Math.floor(placePos[2]);
+        
+        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
+            if (g_map[x][y][z] === 0) {
+                g_map[x][y][z] = 2; // Place CanBreak_wall.jpg cube
+            }
+        }
+    } else {
+        // No cube in front, place 3 units away
+        let forward = [
+            g_at[0] - g_eye[0],
+            g_at[1] - g_eye[1],
+            g_at[2] - g_eye[2]
+        ];
+        
+        let placePos = [
+            g_eye[0] + forward[0] * 3,
+            g_eye[1] + forward[1] * 3,
+            g_eye[2] + forward[2] * 3
+        ];
+        
+        let x = Math.floor(placePos[0]);
+        let y = Math.floor(placePos[1]);
+        let z = Math.floor(placePos[2]);
+        
+        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
+            if (g_map[x][y][z] === 0) {
+                g_map[x][y][z] = 2; // Place CanBreak_wall.jpg cube
+            }
+        }
+    }
+}
+
+// Delete cube (only CanBreak_wall cubes)
+function deleteCube() {
+    let target = getCubeInFront();
+    
+    if (target.exists) {
+        // Only delete CanBreak_wall cubes (type 2)
+        if (g_map[target.x][target.y][target.z] === 2) {
+            g_map[target.x][target.y][target.z] = 0;
+        }
+    }
+}
+
 
 var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, 0];
 var g_up = [0, 1, 0];
-var g_map =[
-    [1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1],
-    [1,0,0,1,1,0,0,1],
-    [1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1],
-    [1,0,0,0,1,0,0,1],
-    [1,0,0,0,0,0,0,1],
-];
 
 function drawMap(){
     for(x=0;x<32;x++){
@@ -602,6 +767,26 @@ function renderAllshapes() {
     sky.matrix.translate(-0.5, 0, -0.5);
     sky.textureNum = -2;
     sky.render();
+
+    // Draw world cubes
+    for (let x = 0; x < 32; x++) {
+        for (let y = 0; y < 32; y++) {
+            for (let z = 0; z < 32; z++) {
+                if (g_map[x][y][z] !== 0) {
+                    let cube = new Cube();
+                    cube.matrix.translate(x, y, z);
+                    
+                    if (g_map[x][y][z] === 1) {
+                        cube.textureNum = 0; // wall.jpg
+                    } else if (g_map[x][y][z] === 2) {
+                        cube.textureNum = 1; // CanBreak_wall.jpg
+                    }
+                    
+                    cube.render();
+                }
+            }
+        }
+    }
 
     //drawKoala();
     drawMap();

@@ -1,7 +1,6 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
 //update
-//backup with  video 3.4
 var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
@@ -23,6 +22,7 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform sampler2D u_Sampler1;
   uniform int u_whichTexture;
 
   void main() {
@@ -33,6 +33,8 @@ var FSHADER_SOURCE = `
 
    }else if(u_whichTexture == 0){
        gl_FragColor = texture2D(u_Sampler0, v_UV);
+   }else if(u_whichTexture == 1) {
+      gl_FragColor = texture2D(u_Sampler1, v_UV);
    }else{ // Error, put redlish
        gl_FragColor = vec4(1,0.2,0.2,1);
    }
@@ -174,7 +176,7 @@ function initTextures() {
     // Register the event handler to be called on loading an image
     image.onload = function () { SendTextureToGLSL(image); };
     // Tell the browser to load an image
-    image.src = '../resources/sky.jpg';
+    image.src = 'wall.jpg';
 
     return true;
 }
@@ -273,6 +275,7 @@ function main() {
         }
     };
 
+    document.onkeydown = keydown; // get keybord
 
     initTextures(gl, 0);
 
@@ -428,6 +431,111 @@ function updateAnimationAngles() {
         g_koalaRotation = 0;
     }
 }
+
+function keydown(ev) {
+    // Calculate forward and right vectors
+    let forward = [g_at[0] - g_eye[0], g_at[1] - g_eye[1], g_at[2] - g_eye[2]];
+    let fLen = Math.sqrt(forward[0] ** 2 + forward[1] ** 2 + forward[2] ** 2);
+    forward = [forward[0] / fLen, forward[1] / fLen, forward[2] / fLen];
+
+    let right = [
+        forward[1] * g_up[2] - forward[2] * g_up[1],
+        forward[2] * g_up[0] - forward[0] * g_up[2],
+        forward[0] * g_up[1] - forward[1] * g_up[0]
+    ];
+    let rLen = Math.sqrt(right[0] ** 2 + right[1] ** 2 + right[2] ** 2);
+    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+
+    let speed = 0.2;
+
+    if (ev.keyCode == 68) { // D - right
+        g_eye[0] += right[0] * speed;
+        g_eye[1] += right[1] * speed;
+        g_eye[2] += right[2] * speed;
+        g_at[0] += right[0] * speed;
+        g_at[1] += right[1] * speed;
+        g_at[2] += right[2] * speed;
+    } else if (ev.keyCode == 65) { // A - left
+        g_eye[0] -= right[0] * speed;
+        g_eye[1] -= right[1] * speed;
+        g_eye[2] -= right[2] * speed;
+        g_at[0] -= right[0] * speed;
+        g_at[1] -= right[1] * speed;
+        g_at[2] -= right[2] * speed;
+    } else if (ev.keyCode == 87) { // W - forward
+        g_eye[0] += forward[0] * speed;
+        g_eye[1] += forward[1] * speed;
+        g_eye[2] += forward[2] * speed;
+        g_at[0] += forward[0] * speed;
+        g_at[1] += forward[1] * speed;
+        g_at[2] += forward[2] * speed;
+    } else if (ev.keyCode == 83) { // S - backward
+        g_eye[0] -= forward[0] * speed;
+        g_eye[1] -= forward[1] * speed;
+        g_eye[2] -= forward[2] * speed;
+        g_at[0] -= forward[0] * speed;
+        g_at[1] -= forward[1] * speed;
+        g_at[2] -= forward[2] * speed;
+    } else if (ev.keyCode == 81) { // Q - turn left
+    rotateCamera(5);   // rotate 5 degrees left
+    } else if (ev.keyCode == 69) { // E - turn right
+    rotateCamera(-5);  // rotate 5 degrees right
+}
+
+
+    renderAllshapes();
+}
+
+function rotateCamera(angle) {
+    let rad = angle * Math.PI / 180;
+
+    // forward vector
+    let forward = [
+        g_at[0] - g_eye[0],
+        g_at[1] - g_eye[1],
+        g_at[2] - g_eye[2]
+    ];
+
+    // Rotate around Y axis
+    let newX = forward[0] * Math.cos(rad) - forward[2] * Math.sin(rad);
+    let newZ = forward[0] * Math.sin(rad) + forward[2] * Math.cos(rad);
+
+    g_at[0] = g_eye[0] + newX;
+    g_at[2] = g_eye[2] + newZ;
+}
+
+
+var g_eye = [0, 0.5, 3];
+var g_at = [0, 0, 0];
+var g_up = [0, 1, 0];
+var g_map =[
+    [1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,1,1,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,0,0,1,0,0,1],
+    [1,0,0,0,0,0,0,1],
+];
+
+function drawMap(){
+    for(x=0;x<32;x++){
+        for(y=0;y<32;y++){
+            if(x ==0 || x == 31 || y == 0 || y == 31){
+                        var wall = new Cube();
+                        wall.color = [1.0, 1.0, 1.0, 1.0];
+                        wall.matrix.translate(0, -0.75, 0);
+                        wall.matrix.scale(0.5, 0.5, 0.5);
+                        wall.matrix.translate(x-16,-0.75,y-16);
+                        wall.textureNum = 0;
+                        wall.renderfast();
+                
+            }
+        }
+    }
+}
+
 function renderAllshapes() {
 
     var startTime = performance.now();
@@ -443,11 +551,18 @@ function renderAllshapes() {
     // Set up view matrix (camera position)
     var viewMatrix = new Matrix4();
     viewMatrix.setLookAt(
-        0, 0.5, 3,   // eye position (camera looking from here)
-        0, 0, 0,     // look at point (looking at origin)
-        0, 1, 0      // up direction
+        g_eye[0], g_eye[1], g_eye[2],   // eye position (camera looking from here)
+        g_at[0], g_at[1], g_at[2],     // look at point (looking at origin)
+        g_up[0], g_up[1], g_up[2]      // up direction
     );
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+
+    // Set up global rotation matrix (for mouse/angle controls)
+    var globalRotMat = new Matrix4()
+        .rotate(g_globalAngle, 0, 1, 0)
+        .rotate(g_mouseXRotation, 1, 0, 0)
+        .rotate(g_mouseYRotation, 0, 1, 0);
+    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
     // Set up global rotation matrix (for mouse/angle controls)
     var globalRotMat = new Matrix4()
@@ -469,12 +584,32 @@ function renderAllshapes() {
     body.render();
 
 
+    //draw the floor
+    var floor = new Cube();
+    floor.color = [0.0, 1.0, 0.0, 1.0];
+    floor.matrix.translate(0, -1.1, 0.0);
+    floor.matrix.scale(15, 0, 15);
+    floor.matrix.translate(-0.5, 0, -0.5);
+    floor.textureNum = -2;
+    floor.render();
+
+    
+    //draw the skye
+    var sky = new Cube();
+    sky.color = [0.0, 0.0, 1.0, 0.9];
+    sky.matrix.translate(0, -1.5, 0);
+    sky.matrix.scale(50, 50, 50);
+    sky.matrix.translate(-0.5, 0, -0.5);
+    sky.textureNum = -2;
+    sky.render();
+
     //drawKoala();
+    drawMap();
 
 
 
     var duration = performance.now() - startTime;
-    //sendTextToHTML("numdot:" + len + "ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), "numdot");
+    sendTextToHTML(" fps: " + Math.floor(10000 / duration), "numdot");
 }
 function drawKoala() {
     // Koala colors
