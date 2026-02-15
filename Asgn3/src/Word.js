@@ -22,6 +22,7 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform sampler2D u_Sampler1;
   uniform int u_whichTexture;
 
   void main() {
@@ -32,6 +33,8 @@ var FSHADER_SOURCE = `
 
    }else if(u_whichTexture == 0){
        gl_FragColor = texture2D(u_Sampler0, v_UV);
+   }else if(u_whichTexture == 1) {
+      gl_FragColor = texture2D(u_Sampler1, v_UV);
    }else{ // Error, put redlish
        gl_FragColor = vec4(1,0.2,0.2,1);
    }
