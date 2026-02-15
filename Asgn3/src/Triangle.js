@@ -75,10 +75,13 @@ function drawTriangle3DUV(vertices, uv) {
 
         gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_UV);
+        
     }
 
     // Draw the triangles
     gl.drawArrays(gl.TRIANGLES, 0, n);
+
+    g_vertexBuffer=null; // reset buffer for next draw
 }
 
 function drawTriangle(vertices) {
@@ -109,7 +112,7 @@ function drawTriangle(vertices) {
 }
 
 var g_vertexBuffer = null;
-function drawTriangle3D(vertices) {
+function initTriangle3D() {
     var n = 3; // The number of vertices
 
     // Create a buffer object
@@ -133,11 +136,16 @@ function drawTriangle3D(vertices) {
 
 }
 
-/*
+
 function drawTriangle3D(vertices) {
     var n = vertices.length / 3; // The number of vertices
 
     if(g_vertexBuffer==null){
         initTriangle3D();
     }
-}*/
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
+    gl.drawArrays(gl.TRIANGLES, 0, n);
+
+    
+}
