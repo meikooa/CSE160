@@ -80,7 +80,7 @@ let g_rightLegLower = -30;
 let g_earAngle = 0;
 let g_koalaAnimation = false;
 
-// Mouse rotation variables (Left over for slider, but not used for FPS camera)
+// Mouse rotation variables
 let g_mouseXRotation = 0;
 let g_mouseYRotation = 0;
 
@@ -91,7 +91,7 @@ let g_pokeDuration = 3.0; // 3 seconds for complete animation
 let g_fallOffset = 0;
 let g_koalaRotation = 0;
 
-// Camera Variables (MOVED HERE TO GLOBAL SCOPE)
+// Camera Variables
 let g_cameraYaw = -90;   // Start looking down the -Z axis
 let g_cameraPitch = -10; // Start looking slightly down
 
@@ -108,16 +108,12 @@ for (let x = 0; x < 32; x++) {
 }
 
 function setupWebGL() {
-    // Retrieve <canvas> element
     canvas = document.getElementById('webgl');
-
-    // Get the rendering context for WebGL
     gl = getWebGLContext(canvas);
     if (!gl) {
         console.log('Failed to get the rendering context for WebGL');
         return;
     }
-
     gl.enable(gl.DEPTH_TEST);
 }
 
@@ -127,82 +123,45 @@ function connetVariablesToGLSL() {
         return;
     }
 
-    // // Get the storage location of a_Position
     a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-    if (a_Position < 0) {
-        console.log('Failed to get the storage location of a_Position');
-        return;
-    }
+    if (a_Position < 0) return;
 
     a_UV = gl.getAttribLocation(gl.program, 'a_UV');
-    if (a_UV < 0) {
-        console.log('Failed to get the storage location of a_UV');
-        return;
-    }
+    if (a_UV < 0) return;
 
-    // Get the storage location of u_FragColor
     u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    if (!u_FragColor) {
-        console.log('Failed to get the storage location of u_FragColor');
-        return;
-    }
+    if (!u_FragColor) return;
 
     u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
-    if (!u_ModelMatrix) {
-        console.log('Failed to get the storage location of u_ModelMatrix');
-        return;
-    }
+    if (!u_ModelMatrix) return;
 
     u_GlobalRotateMatrix = gl.getUniformLocation(gl.program, 'u_GlobalRotateMatrix');
-    if (!u_GlobalRotateMatrix) {
-        console.log('Failed to get the storage location of u_GlobalRotateMatrix');
-        return;
-    }
+    if (!u_GlobalRotateMatrix) return;
 
     u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
-    if (!u_ViewMatrix) {
-        console.log('Failed to get the storage location of u_ViewMatrix');
-        return;
-    }
+    if (!u_ViewMatrix) return;
 
     u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
-    if (!u_ProjectionMatrix) {
-        console.log('Failed to get the storage location of u_ProjectionMatrix');
-        return;
-    }
+    if (!u_ProjectionMatrix) return;
+
     u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
-    if (!u_Sampler0) {
-        console.log('Failed to get the storage location of u_Sampler0');
-        return false;
-    }
+    if (!u_Sampler0) return false;
     
     u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
-    if (!u_Sampler1) {
-        console.log('Failed to get the storage location of u_Sampler1');
-        return false;
-    }
+    if (!u_Sampler1) return false;
     
     u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
     if (u_whichTexture === null) console.log('Failed to get u_whichTexture');
 }
 
-
 function initTextures() {
-    // Load texture 0 - wall.jpg
     var image0 = new Image();
-    if (!image0) {
-        console.log('Failed to create image0 object');
-        return false;
-    }
+    if (!image0) return false;
     image0.onload = function () { SendTextureToGLSL(image0, 0); };
     image0.src = 'wall.jpg';
 
-    // Load texture 1 - CanBreak_wall.jpg
     var image1 = new Image();
-    if (!image1) {
-        console.log('Failed to create image1 object');
-        return false;
-    }
+    if (!image1) return false;
     image1.onload = function () { SendTextureToGLSL(image1, 1); };
     image1.src = 'CanBreak_wall.jpg';
 
@@ -228,16 +187,12 @@ function SendTextureToGLSL(image, texUnit) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-
     console.log('finished loadTexture unit', texUnit);
 }
 
-
-
 let g_selectedColor = [1.0, 1.0, 1.0, 1.0]; //White
-function addActionsForHtmlUI() {
 
-    //Button Events(Shape Type)
+function addActionsForHtmlUI() {
     document.getElementById('green').onclick = function () { g_selectedColor = [0.0, 1.0, 0.0, 1.0]; }; // Green
     document.getElementById('red').onclick = function () { g_selectedColor = [1.0, 0.0, 0.0, 1.0]; }; // Red
     document.getElementById('clearButton').onclick = function () { g_shapesList = []; renderAllshapes(); };
@@ -248,37 +203,25 @@ function addActionsForHtmlUI() {
     document.getElementById("animationYellowOnButton").onclick = function () { g_koalaAnimation = true };
     document.getElementById("animationYellowOffButton").onclick = function () { g_koalaAnimation = false };
 
-    //Slider Events (Color Channels)
     document.getElementById('redSlide').addEventListener('mouseup', function () { g_selectedColor[0] = this.value / 100; });
     document.getElementById('greenSlide').addEventListener('mouseup', function () { g_selectedColor[1] = this.value / 100; });
     document.getElementById('blueSlide').addEventListener('mouseup', function () { g_selectedColor[2] = this.value / 100; });
-
-    // size slider
     document.getElementById('sizeSlide').addEventListener('mouseup', function () { g_selectSize = this.value; });
-
-    //Segment
     document.getElementById('Segment').addEventListener('mouseup', function () { g_segCount = this.value; });
 
-    //document.getElementById('angleSlide').addEventListener('mouseup', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('angleSlide').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('yellowSlide').addEventListener('mousemove', function () { g_yellowAngle = this.value; renderAllshapes(); });
 }
 
 function main() {
-
-    setupWebGL(); // set up canvas and gl variables 
-    connetVariablesToGLSL() // set up GLSL shader programs and connnect GLSL vcariables
-
-    //set uo actions for the HTML UI elements
+    setupWebGL();
+    connetVariablesToGLSL()
     addActionsForHtmlUI()
     
-    // Register function (event handler) to be called on a mouse press
-    // Handle mouse clicks and Pointer Lock
     canvas.onmousedown = function (ev) {
-        // Request game-like pointer lock if we don't have it yet
         if (document.pointerLockElement !== canvas) {
             canvas.requestPointerLock();
-            return; // Don't place a block on the initial click to lock the mouse
+            return;
         }
 
         if (ev.shiftKey) {
@@ -293,10 +236,8 @@ function main() {
         }
     };
 
-    // Handle FPS mouse movement
     document.addEventListener('mousemove', function(ev) {
         if (document.pointerLockElement === canvas) {
-            // Get relative mouse movement
             let movementX = ev.movementX || 0;
             let movementY = ev.movementY || 0;
 
@@ -304,7 +245,6 @@ function main() {
             g_cameraYaw -= movementX * sensitivity;
             g_cameraPitch -= movementY * sensitivity;
 
-            // Clamp pitch so you can't backflip the camera
             if (g_cameraPitch > 89.0) g_cameraPitch = 89.0;
             if (g_cameraPitch < -89.0) g_cameraPitch = -89.0;
 
@@ -312,37 +252,28 @@ function main() {
         }
     });
 
-    // Prevent right-click context menu
     canvas.oncontextmenu = function(ev) {
         ev.preventDefault();
         return false;
     };
 
-    document.onkeydown = keydown; // get keybord
+    document.onkeydown = keydown;
 
     initTextures(gl, 0);
-
-    // Specify the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
     requestAnimationFrame(tick);
 }
 
-var g_shapesList = []; // The array for storing shapes
-
+var g_shapesList = [];
 var g_startTime = performance.now() / 1000.0;
 var g_seconds = performance.now() / 1000.0 - g_startTime;
 var headSphere = new Sphere();
 headSphere.segments = 10;
+
 function tick() {
     g_seconds = performance.now() / 100.0 - g_startTime;
-    //console.log(g_seconds);
-
     updateAnimationAngles();
-
-    // Draw everything
     renderAllshapes();
-
     requestAnimationFrame(tick);
 }
 
@@ -366,8 +297,8 @@ function click(ev) {
 }
 
 function convertCoordinatedEvenToGL(ev) {
-    var x = ev.clientX; // x coordinate of a mouse pointer
-    var y = ev.clientY; // y coordinate of a mouse pointer
+    var x = ev.clientX;
+    var y = ev.clientY;
     var rect = ev.target.getBoundingClientRect();
 
     x = ((x - rect.left) - canvas.width / 2) / (canvas.width / 2);
@@ -377,19 +308,15 @@ function convertCoordinatedEvenToGL(ev) {
 }
 
 function updateAnimationAngles() {
-    // Poke animation takes priority
     if (g_pokeAnimation) {
         let elapsedTime = g_seconds - g_pokeStartTime;
-        let t = elapsedTime / g_pokeDuration; // normalized time 0 to 1
+        let t = elapsedTime / g_pokeDuration;
 
         if (t < 1.0) {
-            // Just falling and tumbling
-            let fallCurve = t * t; // accelerate fall
-
+            let fallCurve = t * t;
             g_fallOffset = -2.5 * fallCurve;
-            g_koalaRotation = 360 * t; // complete rotation
+            g_koalaRotation = 360 * t;
 
-            // Flailing limbs
             g_leftArmUpper = 40 + 30 * Math.sin(t * Math.PI * 6);
             g_rightArmUpper = 40 + 30 * Math.sin(t * Math.PI * 6 + Math.PI);
             g_leftLegUpper = 10 + 40 * Math.sin(t * Math.PI * 5);
@@ -398,7 +325,6 @@ function updateAnimationAngles() {
             g_rightArmLower = -30 * Math.sin(t * Math.PI * 8);
             g_earAngle = 10 * Math.sin(t * Math.PI * 12);
         } else {
-            // Animation complete - reset to normal
             g_pokeAnimation = false;
             g_fallOffset = 0;
             g_koalaRotation = 0;
@@ -414,33 +340,29 @@ function updateAnimationAngles() {
             g_earAngle = 0;
         }
     } else if (g_koalaAnimation) {
-        // Normal animation - Gentle breathing and waving
-        console.log("67")
         g_headAngle = 5 * Math.sin(g_seconds * 0.5);
-
-        // Waving arms
         g_leftArmUpper = -20 + 30 * Math.sin(g_seconds);
         g_leftArmLower = -10 * Math.sin(g_seconds * 1.5);
-
         g_rightArmUpper = -20 + 30 * Math.sin(g_seconds + Math.PI);
-
-        // Ear wiggle
         g_earAngle = 5 * Math.sin(g_seconds * 3);
-
-        // Reset fall variables
         g_fallOffset = 0;
         g_koalaRotation = 0;
     } else {
-        // No animation - ensure fall variables are reset
         g_fallOffset = 0;
         g_koalaRotation = 0;
     }
 }
 
+// -------------------------------------------------------------
+// NEW: Unity-Style Sliding Movement
+// -------------------------------------------------------------
 function keydown(ev) {
-    let forward = [g_at[0] - g_eye[0], g_at[1] - g_eye[1], g_at[2] - g_eye[2]];
-    let fLen = Math.sqrt(forward[0] ** 2 + forward[1] ** 2 + forward[2] ** 2);
-    forward = [forward[0] / fLen, forward[1] / fLen, forward[2] / fLen];
+    // Calculate normalized Forward and Right vectors in XZ plane
+    let forward = [g_at[0] - g_eye[0], 0, g_at[2] - g_eye[2]]; 
+    let fLen = Math.sqrt(forward[0] ** 2 + forward[2] ** 2);
+    if (fLen > 0) {
+        forward = [forward[0] / fLen, 0, forward[2] / fLen];
+    }
 
     let right = [
         forward[1] * g_up[2] - forward[2] * g_up[1],
@@ -448,24 +370,37 @@ function keydown(ev) {
         forward[0] * g_up[1] - forward[1] * g_up[0]
     ];
     let rLen = Math.sqrt(right[0] ** 2 + right[1] ** 2 + right[2] ** 2);
-    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+    if (rLen > 0) {
+        right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+    }
 
     let speed = 0.2;
+    let dx = 0;
+    let dz = 0;
     let moved = false;
 
-    if (ev.keyCode == 68) { // D
-        let newEye = [g_eye[0] + right[0] * speed, g_eye[1] + right[1] * speed, g_eye[2] + right[2] * speed];
-        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
-    } else if (ev.keyCode == 65) { // A
-        let newEye = [g_eye[0] - right[0] * speed, g_eye[1] - right[1] * speed, g_eye[2] - right[2] * speed];
-        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
-    } else if (ev.keyCode == 87) { // W
-        let newEye = [g_eye[0] + forward[0] * speed, g_eye[1] + forward[1] * speed, g_eye[2] + forward[2] * speed];
-        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
-    } else if (ev.keyCode == 83) { // S
-        let newEye = [g_eye[0] - forward[0] * speed, g_eye[1] - forward[1] * speed, g_eye[2] - forward[2] * speed];
-        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
-    } else if (ev.keyCode == 81) { // Q - turn left
+    // Build the movement vector based on input
+    if (ev.keyCode == 68) { dx += right[0] * speed; dz += right[2] * speed; } // D
+    if (ev.keyCode == 65) { dx -= right[0] * speed; dz -= right[2] * speed; } // A
+    if (ev.keyCode == 87) { dx += forward[0] * speed; dz += forward[2] * speed; } // W
+    if (ev.keyCode == 83) { dx -= forward[0] * speed; dz -= forward[2] * speed; } // S
+
+    // Unity-style Axis Separation: Move X and Z independently to slide against walls
+    if (dx !== 0 || dz !== 0) {
+        // Try applying X movement
+        if (!checkCollision(g_eye[0] + dx, g_eye[1], g_eye[2])) {
+            g_eye[0] += dx;
+            moved = true;
+        }
+        // Try applying Z movement
+        if (!checkCollision(g_eye[0], g_eye[1], g_eye[2] + dz)) {
+            g_eye[2] += dz;
+            moved = true;
+        }
+    }
+
+    // Camera rotation using Q and E
+    if (ev.keyCode == 81) { // Q - turn left
         g_cameraYaw -= 5;
         moved = true;
     } else if (ev.keyCode == 69) { // E - turn right
@@ -477,173 +412,137 @@ function keydown(ev) {
     if (moved) updateLookAt(); 
 }
 
-// Check if position collides with any cube
-function checkCollision(pos) {
-    let x = Math.floor(pos[0]);
-    let y = Math.floor(pos[1]);
-    let z = Math.floor(pos[2]);
+// -------------------------------------------------------------
+// NEW: Unity-Style Bounding Box Collision
+// -------------------------------------------------------------
+function checkCollision(x, y, z) {
+    let buffer = 0.2; 
     
-    if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
-        return g_map[x][y][z] !== 0; // collision if there's a cube
+    // Check all 8 corners of the player's bounding box
+    let corners = [
+        [x - buffer, y - buffer, z - buffer],
+        [x + buffer, y - buffer, z - buffer],
+        [x - buffer, y + buffer, z - buffer],
+        [x + buffer, y + buffer, z - buffer],
+        [x - buffer, y - buffer, z + buffer],
+        [x + buffer, y - buffer, z + buffer],
+        [x - buffer, y + buffer, z + buffer],
+        [x + buffer, y + buffer, z + buffer]
+    ];
+
+    for (let i = 0; i < corners.length; i++) {
+        let cx = Math.floor(corners[i][0]);
+        let cy = Math.floor(corners[i][1]);
+        let cz = Math.floor(corners[i][2]);
+        
+        // If any corner is inside a solid map block, we've collided
+        if (cx >= 0 && cx < 32 && cy >= 0 && cy < 32 && cz >= 0 && cz < 32) {
+            if (g_map[cx][cy][cz] !== 0) {
+                return true;
+            }
+        }
     }
     return false;
 }
 
-// Get cube position in front of camera
-function getCubeInFront() {
-    let forward = [
-        g_at[0] - g_eye[0],
-        g_at[1] - g_eye[1],
-        g_at[2] - g_eye[2]
-    ];
-    
-    // Check along ray from eye to 5 units away
-    for (let dist = 0.5; dist < 5; dist += 0.1) {
-        let checkPos = [
-            g_eye[0] + forward[0] * dist,
-            g_eye[1] + forward[1] * dist,
-            g_eye[2] + forward[2] * dist
-        ];
-        
-        let x = Math.floor(checkPos[0]);
-        let y = Math.floor(checkPos[1]);
-        let z = Math.floor(checkPos[2]);
-        
-        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
-            if (g_map[x][y][z] !== 0) {
-                return {x, y, z, dist, exists: true};
-            }
-        }
+// -------------------------------------------------------------
+// NEW: Simple Minecraft Stack Logic
+// -------------------------------------------------------------
+function getMapSquareInFront() {
+    let forward = [g_at[0] - g_eye[0], 0, g_at[2] - g_eye[2]];
+    let fLen = Math.sqrt(forward[0]**2 + forward[2]**2);
+    if (fLen > 0) {
+        forward = [forward[0] / fLen, 0, forward[2] / fLen];
     }
-    return {exists: false};
+    
+    // Look ~2 units ahead in the XZ plane
+    let targetX = Math.floor(g_eye[0] + forward[0] * 2);
+    let targetZ = Math.floor(g_eye[2] + forward[2] * 2);
+    
+    return {x: targetX, z: targetZ};
 }
 
-// Place cube (called by mouse click)
 function placeCube() {
-    let target = getCubeInFront();
+    let target = getMapSquareInFront();
+    let x = target.x;
+    let z = target.z;
     
-    if (target.exists) {
-        // Place cube one step before the hit cube
-        let forward = [
-            g_at[0] - g_eye[0],
-            g_at[1] - g_eye[1],
-            g_at[2] - g_eye[2]
-        ];
-        
-        let placePos = [
-            g_eye[0] + forward[0] * (target.dist - 0.6),
-            g_eye[1] + forward[1] * (target.dist - 0.6),
-            g_eye[2] + forward[2] * (target.dist - 0.6)
-        ];
-        
-        let x = Math.floor(placePos[0]);
-        let y = Math.floor(placePos[1]);
-        let z = Math.floor(placePos[2]);
-        
-        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
+    if (x >= 0 && x < 32 && z >= 0 && z < 32) {
+        for (let y = 0; y < 32; y++) {
             if (g_map[x][y][z] === 0) {
-                g_map[x][y][z] = 2; // Place CanBreak_wall.jpg cube
-            }
-        }
-    } else {
-        // No cube in front, place 3 units away
-        let forward = [
-            g_at[0] - g_eye[0],
-            g_at[1] - g_eye[1],
-            g_at[2] - g_eye[2]
-        ];
-        
-        let placePos = [
-            g_eye[0] + forward[0] * 3,
-            g_eye[1] + forward[1] * 3,
-            g_eye[2] + forward[2] * 3
-        ];
-        
-        let x = Math.floor(placePos[0]);
-        let y = Math.floor(placePos[1]);
-        let z = Math.floor(placePos[2]);
-        
-        if (x >= 0 && x < 32 && y >= 0 && y < 32 && z >= 0 && z < 32) {
-            if (g_map[x][y][z] === 0) {
-                g_map[x][y][z] = 2; // Place CanBreak_wall.jpg cube
+                g_map[x][y][z] = 2; // Place a CanBreak_wall.jpg cube
+                break;
             }
         }
     }
 }
 
-// Delete cube (only CanBreak_wall cubes)
 function deleteCube() {
-    let target = getCubeInFront();
+    let target = getMapSquareInFront();
+    let x = target.x;
+    let z = target.z;
     
-    if (target.exists) {
-        // Only delete CanBreak_wall cubes (type 2)
-        if (g_map[target.x][target.y][target.z] === 2) {
-            g_map[target.x][target.y][target.z] = 0;
+    if (x >= 0 && x < 32 && z >= 0 && z < 32) {
+        for (let y = 31; y >= 0; y--) {
+            if (g_map[x][y][z] !== 0) {
+                g_map[x][y][z] = 0; // Delete top block in stack
+                break;
+            }
         }
     }
 }
-
 
 var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, 0];
 var g_up = [0, 1, 0];
 
-// Update Look At Function (MOVED TO GLOBAL SCOPE)
 function updateLookAt() {
     let radYaw = g_cameraYaw * Math.PI / 180.0;
     let radPitch = g_cameraPitch * Math.PI / 180.0;
-    let r = 10; // Distance of the look-at point
+    let r = 10; 
     
-    // Calculate new target point based on eye position and angles
     g_at[0] = g_eye[0] + r * Math.cos(radPitch) * Math.cos(radYaw);
     g_at[1] = g_eye[1] + r * Math.sin(radPitch);
     g_at[2] = g_eye[2] + r * Math.cos(radPitch) * Math.sin(radYaw);
 }
 
 function drawMap(){
-    for(x=0;x<32;x++){
-        for(y=0;y<32;y++){
+    for(let x=0;x<32;x++){
+        for(let y=0;y<32;y++){
             if(x ==0 || x == 31 || y == 0 || y == 31){
-                        var wall = new Cube();
-                        wall.color = [1.0, 1.0, 1.0, 1.0];
-                        wall.matrix.translate(0, -0.75, 0);
-                        wall.matrix.scale(0.5, 0.5, 0.5);
-                        wall.matrix.translate(x-16,-0.75,y-16);
-                        wall.textureNum = 0;
-                        wall.renderfast();
-                
+                var wall = new Cube();
+                wall.color = [1.0, 1.0, 1.0, 1.0];
+                wall.matrix.translate(0, -0.75, 0);
+                wall.matrix.scale(0.5, 0.5, 0.5);
+                wall.matrix.translate(x-16,-0.75,y-16);
+                wall.textureNum = 0;
+                wall.renderfast();
             }
         }
     }
 }
 
 function renderAllshapes() {
-
     var startTime = performance.now();
 
-    // Clear <canvas> with depth buffer
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Set up projection matrix (perspective)
     var projMatrix = new Matrix4();
     projMatrix.setPerspective(60, canvas.width / canvas.height, 0.1, 100);
     gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
 
-    // Set up view matrix (camera position)
     var viewMatrix = new Matrix4();
     viewMatrix.setLookAt(
-        g_eye[0], g_eye[1], g_eye[2],   // eye position (camera looking from here)
-        g_at[0], g_at[1], g_at[2],     // look at point (looking at origin)
-        g_up[0], g_up[1], g_up[2]      // up direction
+        g_eye[0], g_eye[1], g_eye[2],   
+        g_at[0], g_at[1], g_at[2],     
+        g_up[0], g_up[1], g_up[2]      
     );
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
 
-    // Set up global rotation matrix (only for slider angles now)
     var globalRotMat = new Matrix4()
         .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
-    //draw a cube
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
@@ -651,8 +550,6 @@ function renderAllshapes() {
     body.textureNum = 0;
     body.render();
 
-
-    //draw the floor
     var floor = new Cube();
     floor.color = [0.0, 1.0, 0.0, 1.0];
     floor.matrix.translate(0, -1.1, 0.0);
@@ -660,9 +557,7 @@ function renderAllshapes() {
     floor.matrix.translate(-0.5, 0, -0.5);
     floor.textureNum = -2;
     floor.render();
-
     
-    //draw the skye
     var sky = new Cube();
     sky.color = [0.0, 0.0, 1.0, 0.9];
     sky.matrix.translate(0, -1.5, 0);
@@ -671,7 +566,6 @@ function renderAllshapes() {
     sky.textureNum = -2;
     sky.render();
 
-    // Draw world cubes
     for (let x = 0; x < 32; x++) {
         for (let y = 0; y < 32; y++) {
             for (let z = 0; z < 32; z++) {
@@ -680,9 +574,9 @@ function renderAllshapes() {
                     cube.matrix.translate(x, y, z);
                     
                     if (g_map[x][y][z] === 1) {
-                        cube.textureNum = 0; // wall.jpg
+                        cube.textureNum = 0; 
                     } else if (g_map[x][y][z] === 2) {
-                        cube.textureNum = 1; // CanBreak_wall.jpg
+                        cube.textureNum = 1; 
                     }
                     
                     cube.render();
@@ -691,7 +585,6 @@ function renderAllshapes() {
         }
     }
 
-    //drawKoala();
     drawMap();
 
     var duration = performance.now() - startTime;
@@ -699,26 +592,20 @@ function renderAllshapes() {
 }
 
 function drawKoala() {
-    // Koala colors
     var koalaGray = [0.6, 0.6, 0.65, 1.0];
     var koalaDarkGray = [0.4, 0.4, 0.45, 1.0];
     var koalaWhite = [0.95, 0.95, 0.95, 1.0];
     var koalaBlack = [0.1, 0.1, 0.1, 1.0];
     var koalaNose = [0.2, 0.2, 0.2, 1.0];
 
-
-    // Body (cylinder) - Base of the hierarchy
-
     var body = new Cylinder();
     body.color = koalaGray;
     body.matrix.translate(0, -0.3 + g_fallOffset, 0);
-    body.matrix.rotate(g_koalaRotation, 0, 0, 1); // Apply tumble rotation
+    body.matrix.rotate(g_koalaRotation, 0, 0, 1); 
     body.matrix.rotate(180, 0, -90, 0);
     body.matrix.scale(0.35, 0.5, 0.35);
     var bodyCoords = new Matrix4(body.matrix);
     body.render();
-
-    // Head (sphere) - connected to body
 
     var head = new Sphere();
     head.color = koalaGray;
@@ -737,7 +624,6 @@ function drawKoala() {
     leftEar.matrix.scale(0.55, 0.55, 0.3);
     leftEar.render();
 
-    // Right Ear (sphere)
     var rightEar = new Sphere();
     rightEar.color = koalaDarkGray;
     rightEar.matrix = new Matrix4(headCoords);
@@ -746,7 +632,6 @@ function drawKoala() {
     rightEar.matrix.scale(0.55, 0.55, 0.3);
     rightEar.render();
 
-    // Snout (sphere)
     var snout = new Sphere();
     snout.color = koalaWhite;
     snout.matrix = new Matrix4(headCoords);
@@ -754,7 +639,6 @@ function drawKoala() {
     snout.matrix.scale(0.5, 0.4, 0.4);
     snout.render();
 
-    // Nose (small sphere)
     var nose = new Sphere();
     nose.color = koalaNose;
     nose.matrix = new Matrix4(headCoords);
@@ -762,7 +646,6 @@ function drawKoala() {
     nose.matrix.scale(0.25, 0.3, 0.2);
     nose.render();
 
-    // Left Eye
     var leftEye = new Sphere();
     leftEye.color = koalaBlack;
     leftEye.matrix = new Matrix4(headCoords);
@@ -770,7 +653,6 @@ function drawKoala() {
     leftEye.matrix.scale(0.15, 0.15, 0.1);
     leftEye.render();
 
-    // Right Eye
     var rightEye = new Sphere();
     rightEye.color = koalaBlack;
     rightEye.matrix = new Matrix4(headCoords);
@@ -778,7 +660,6 @@ function drawKoala() {
     rightEye.matrix.scale(0.15, 0.15, 0.1);
     rightEye.render();
 
-    // Left Upper Arm (cylinder)
     var leftArmUpper = new Cylinder();
     leftArmUpper.color = koalaGray;
     leftArmUpper.matrix = new Matrix4(bodyCoords);
@@ -789,7 +670,6 @@ function drawKoala() {
     leftArmUpper.matrix.scale(0.25, 0.5, 0.25);
     leftArmUpper.render();
 
-    // Left Lower Arm (cylinder) - connected to upper arm
     var leftArmLower = new Cylinder();
     leftArmLower.color = koalaDarkGray;
     leftArmLower.matrix = new Matrix4(leftArmUpperCoords);
@@ -799,7 +679,6 @@ function drawKoala() {
     leftArmLower.matrix.scale(0.25, -0.5, 0.25);
     leftArmLower.render();
 
-    // Left Paw (sphere) - connected to lower arm
     var leftPaw = new Sphere();
     leftPaw.color = koalaBlack;
     leftPaw.matrix = new Matrix4(leftArmLowerCoords);
@@ -807,7 +686,6 @@ function drawKoala() {
     leftPaw.matrix.scale(0.35, 0.35, 0.35);
     leftPaw.render();
 
-    // Right Upper Arm
     var rightArmUpper = new Cylinder();
     rightArmUpper.color = koalaGray;
     rightArmUpper.matrix = new Matrix4(bodyCoords);
@@ -818,7 +696,6 @@ function drawKoala() {
     rightArmUpper.matrix.scale(0.25, 0.5, 0.25);
     rightArmUpper.render();
 
-    // Right Lower Arm
     var rightArmLower = new Cylinder();
     rightArmLower.color = koalaDarkGray;
     rightArmLower.matrix = new Matrix4(rightArmUpperCoords);
@@ -828,7 +705,6 @@ function drawKoala() {
     rightArmLower.matrix.scale(0.25, -0.5, 0.25);
     rightArmLower.render();
 
-    // Right Paw
     var rightPaw = new Sphere();
     rightPaw.color = koalaBlack;
     rightPaw.matrix = new Matrix4(rightArmLowerCoords);
@@ -836,7 +712,6 @@ function drawKoala() {
     rightPaw.matrix.scale(0.35, 0.3, 0.35);
     rightPaw.render();
 
-    // Left Upper Leg
     var leftLegUpper = new Cylinder();
     leftLegUpper.color = koalaGray;
     leftLegUpper.matrix = new Matrix4(bodyCoords);
@@ -848,7 +723,6 @@ function drawKoala() {
     leftLegUpper.matrix.scale(0.3, 0.5, 0.3);
     leftLegUpper.render()
 
-    // Left Lower Leg - connected to upper leg
     var leftLegLower = new Cylinder();
     leftLegLower.color = koalaDarkGray;
     leftLegLower.matrix = new Matrix4(leftLegUpperCoords);
@@ -858,7 +732,6 @@ function drawKoala() {
     leftLegLower.matrix.scale(0.25, -0.35, 0.25);
     leftLegLower.render();
 
-    // Left Foot - connected to lower leg
     var leftFoot = new Sphere();
     leftFoot.color = koalaBlack;
     leftFoot.matrix = new Matrix4(leftLegLowerCoords);
@@ -866,7 +739,6 @@ function drawKoala() {
     leftFoot.matrix.scale(0.35, 0.3, 0.35);
     leftFoot.render();
 
-    // Right Upper Leg
     var rightLegUpper = new Cylinder();
     rightLegUpper.color = koalaGray;
     rightLegUpper.matrix = new Matrix4(bodyCoords);
@@ -878,7 +750,6 @@ function drawKoala() {
     rightLegUpper.matrix.scale(0.3, 0.5, 0.3);
     rightLegUpper.render();
 
-    // Right Lower Leg
     var rightLegLower = new Cylinder();
     rightLegLower.color = koalaDarkGray;
     rightLegLower.matrix = new Matrix4(rightLegUpperCoords);
@@ -888,8 +759,6 @@ function drawKoala() {
     rightLegLower.matrix.scale(0.25, -0.35, 0.25);
     rightLegLower.render();
 
-
-    // Right Foot
     var rightFoot = new Sphere();
     rightFoot.color = koalaBlack;
     rightFoot.matrix = new Matrix4(rightLegLowerCoords);
@@ -897,42 +766,33 @@ function drawKoala() {
     rightFoot.matrix.scale(0.35, 0.3, 0.35);
     rightFoot.render();
 
-    // tree 
     var tree = new Sphere();
     tree.color = [0.588, 0.294, 0, 1.0];
     tree.matrix = new Matrix4(body.matrix);
     tree.matrix.translate(0, -0.5, 1.5);
     tree.matrix.rotate(90, 0, 0, 1);
-
     tree.matrix.scale(2, 0.3, 0.5);
     tree.render();
 }
 
 function sendTextToHTML(text, htmlID) {
     var htmlElm = document.getElementById(htmlID);
-    if (!htmlElm) {
-        console.log("Failed to get" + htmlID + "from HTML");
-        return;
-    }
+    if (!htmlElm) return;
     htmlElm.innerHTML = text;
 }
 
-
 function drawMyPicture() {
-    //clean the canvas
     g_shapesList = [];
 
     let center = [0, 0];
     let radius = 0.5;
 
-
-    //  1. Upper semicircle (red)
     for (let i = 0; i < 60; i++) {
         let a1 = Math.PI * i / 60;
         let a2 = Math.PI * (i + 1) / 60;
 
         let t = new Triangle();
-        t.color = [1.0, 0.0, 0.0, 1.0]; // red
+        t.color = [1.0, 0.0, 0.0, 1.0]; 
         t.points = [
             center[0], center[1],
             Math.cos(a1) * radius, Math.sin(a1) * radius,
@@ -945,14 +805,12 @@ function drawMyPicture() {
         g_shapesList.push(t);
     }
 
-
-    // 2. Lower semicircle (white)
     for (let i = 0; i < 60; i++) {
         let a1 = Math.PI + Math.PI * i / 60;
         let a2 = Math.PI + Math.PI * (i + 1) / 60;
 
         let t = new Triangle();
-        t.color = [1.0, 1.0, 1.0, 1.0]; // white
+        t.color = [1.0, 1.0, 1.0, 1.0]; 
         t.points = [
             center[0], center[1],
             Math.cos(a1) * radius, Math.sin(a1) * radius,
@@ -965,7 +823,6 @@ function drawMyPicture() {
         g_shapesList.push(t);
     }
 
-    // 3. Central black rectangle
     let w = 0.10, h = 0.15;
 
     let rectTris = [
@@ -984,20 +841,15 @@ function drawMyPicture() {
         g_shapesList.push(t);
     });
 
-
-    // 4. The first letter of my first name  Capitalized
-
     function addZLine(x1, y1, x2, y2, thickness) {
-        //  Calculate the direction perpendicular to the line segment
         let dx = x2 - x1;
         let dy = y2 - y1;
         let len = Math.sqrt(dx * dx + dy * dy);
         let nx = -dy / len * thickness;
         let ny = dx / len * thickness;
 
-        // Create two triangles to form a rectangle
         let rect1 = new Triangle();
-        rect1.color = [1, 1, 0, 1]; // yellow
+        rect1.color = [1, 1, 0, 1]; 
         rect1.points = [
             x1 + nx, y1 + ny,
             x1 - nx, y1 - ny,
@@ -1010,7 +862,7 @@ function drawMyPicture() {
         g_shapesList.push(rect1);
 
         let rect2 = new Triangle();
-        rect2.color = [1, 1, 0, 1]; // yellow
+        rect2.color = [1, 1, 0, 1]; 
         rect2.points = [
             x2 + nx, y2 + ny,
             x1 - nx, y1 - ny,
@@ -1023,9 +875,8 @@ function drawMyPicture() {
         g_shapesList.push(rect2);
     }
 
-    // letter Z with yellow line
     let lineThickness = 0.012;
-    addZLine(-0.06, 0.06, 0.06, 0.06, lineThickness);   // top horizontal line
-    addZLine(0.06, 0.06, -0.06, -0.06, lineThickness);  // slash
-    addZLine(-0.06, -0.06, 0.06, -0.06, lineThickness); // bottom horizontal line
+    addZLine(-0.06, 0.06, 0.06, 0.06, lineThickness);   
+    addZLine(0.06, 0.06, -0.06, -0.06, lineThickness);  
+    addZLine(-0.06, -0.06, 0.06, -0.06, lineThickness); 
 }
