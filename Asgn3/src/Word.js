@@ -525,7 +525,7 @@ function drawMap(){
                         body.matrix.translate(0, -0.75, 0);
                         body.matrix.scale(0.5, 0.5, 0.5);
                         body.matrix.translate(x-16,-0.75,y-16);
-                        body.render();
+                        body.renderfast();
                 
             }
         }
