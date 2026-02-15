@@ -1,6 +1,5 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
-//update
 var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
@@ -11,8 +10,7 @@ var VSHADER_SOURCE = `
   uniform mat4 u_ProjectionMatrix;
   uniform mat4 u_ViewMatrix;
   void main() {
-    gl_Position = u_ProjectionMatrix * u_ViewMatrix *  u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
-    //gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
   }`
 
@@ -82,7 +80,7 @@ let g_rightLegLower = -30;
 let g_earAngle = 0;
 let g_koalaAnimation = false;
 
-// Mouse rotation variables
+// Mouse rotation variables (Left over for slider, but not used for FPS camera)
 let g_mouseXRotation = 0;
 let g_mouseYRotation = 0;
 
@@ -92,6 +90,10 @@ let g_pokeStartTime = 0;
 let g_pokeDuration = 3.0; // 3 seconds for complete animation
 let g_fallOffset = 0;
 let g_koalaRotation = 0;
+
+// Camera Variables (MOVED HERE TO GLOBAL SCOPE)
+let g_cameraYaw = -90;   // Start looking down the -Z axis
+let g_cameraPitch = -10; // Start looking slightly down
 
 // Minecraft world - 3D array to store cubes
 let g_map = [];
@@ -246,9 +248,6 @@ function addActionsForHtmlUI() {
     document.getElementById("animationYellowOnButton").onclick = function () { g_koalaAnimation = true };
     document.getElementById("animationYellowOffButton").onclick = function () { g_koalaAnimation = false };
 
-
-
-
     //Slider Events (Color Channels)
     document.getElementById('redSlide').addEventListener('mouseup', function () { g_selectedColor[0] = this.value / 100; });
     document.getElementById('greenSlide').addEventListener('mouseup', function () { g_selectedColor[1] = this.value / 100; });
@@ -263,9 +262,8 @@ function addActionsForHtmlUI() {
     //document.getElementById('angleSlide').addEventListener('mouseup', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('angleSlide').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('yellowSlide').addEventListener('mousemove', function () { g_yellowAngle = this.value; renderAllshapes(); });
-
-
 }
+
 function main() {
 
     setupWebGL(); // set up canvas and gl variables 
@@ -273,47 +271,51 @@ function main() {
 
     //set uo actions for the HTML UI elements
     addActionsForHtmlUI()
+    
     // Register function (event handler) to be called on a mouse press
+    // Handle mouse clicks and Pointer Lock
     canvas.onmousedown = function (ev) {
-        // Check if Shift key is held
+        // Request game-like pointer lock if we don't have it yet
+        if (document.pointerLockElement !== canvas) {
+            canvas.requestPointerLock();
+            return; // Don't place a block on the initial click to lock the mouse
+        }
+
         if (ev.shiftKey) {
-            // Trigger poke animation
             if (!g_pokeAnimation) {
                 g_pokeAnimation = true;
                 g_pokeStartTime = g_seconds;
             }
-        } else if (ev.button === 0) {
-            // Left click - place cube
+        } else if (ev.button === 0) { // Left click
             placeCube();
-            renderAllshapes();
-        } else if (ev.button === 2) {
-            // Right click - delete cube
+        } else if (ev.button === 2) { // Right click
             deleteCube();
-            renderAllshapes();
         }
     };
-    
+
+    // Handle FPS mouse movement
+    document.addEventListener('mousemove', function(ev) {
+        if (document.pointerLockElement === canvas) {
+            // Get relative mouse movement
+            let movementX = ev.movementX || 0;
+            let movementY = ev.movementY || 0;
+
+            let sensitivity = 0.2;
+            g_cameraYaw -= movementX * sensitivity;
+            g_cameraPitch -= movementY * sensitivity;
+
+            // Clamp pitch so you can't backflip the camera
+            if (g_cameraPitch > 89.0) g_cameraPitch = 89.0;
+            if (g_cameraPitch < -89.0) g_cameraPitch = -89.0;
+
+            updateLookAt();
+        }
+    });
+
     // Prevent right-click context menu
     canvas.oncontextmenu = function(ev) {
         ev.preventDefault();
         return false;
-    };
-
-    canvas.onmousemove = function (ev) {
-        if (ev.buttons & 1 && !ev.shiftKey) {  // Left mouse button is held (not Shift+Click)
-            // Map mouse position to rotation
-            var rect = ev.target.getBoundingClientRect();
-            var x = ev.clientX - rect.left;
-            var y = ev.clientY - rect.top;
-
-            // Map x position (0 to canvas.width) to x-rotation (-180 to 180)
-            g_mouseYRotation = ((x / canvas.width) * -360) - 180;
-
-            // Map y position (0 to canvas.height) to y-rotation (-180 to 180)
-            g_mouseXRotation = ((y / canvas.height) * -360) - 180;
-
-            // No need to call click(ev) here anymore
-        }
     };
 
     document.onkeydown = keydown; // get keybord
@@ -323,10 +325,6 @@ function main() {
     // Specify the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-    // Clear <canvas>
-    //gl.clear(gl.COLOR_BUFFER_BIT);
-
-    //renderAllshapes();
     requestAnimationFrame(tick);
 }
 
@@ -348,12 +346,6 @@ function tick() {
     requestAnimationFrame(tick);
 }
 
-/*
-var g_points = [];  // The array for the position of a mouse press
-var g_colors = [];  // The array to store the color of a point
-var g_size = [];    // The array to store the size of a point
-*/
-
 function click(ev) {
     [x, y] = convertCoordinatedEvenToGL(ev)
 
@@ -370,31 +362,8 @@ function click(ev) {
     point.size = g_selectSize;
     g_shapesList.push(point);
 
-    /*
-    // Store the coordinates to g_points array
-    g_points.push([x, y]);
-
-    //Store the color to g_colors array
-    g_colors.push(g_selectedColor.slice());
-
-    //Store the size to g_size array
-    g_size.push(g_selectSize);
-    */
-    /*
-    // Store the coordinates to g_points array
-    //if (x >= 0.0 && y >= 0.0) {      // First quadrant
-    //    g_colors.push([1.0, 0.0, 0.0, 1.0]);  // Red
-    //} else if (x < 0.0 && y < 0.0) { // Third quadrant
-    //    g_colors.push([0.0, 1.0, 0.0, 1.0]);  // Green
-    //} else {                         // Others
-    //    g_colors.push([1.0, 1.0, 1.0, 1.0]);  // White
-    //}
-    */
-    // Draw every shape  that is supposed to be in the canvas
     renderAllshapes();
 }
-
-
 
 function convertCoordinatedEvenToGL(ev) {
     var x = ev.clientX; // x coordinate of a mouse pointer
@@ -408,11 +377,6 @@ function convertCoordinatedEvenToGL(ev) {
 }
 
 function updateAnimationAngles() {
-    /*
-    if (g_yellowAnimation) {
-        g_yellowAngle = (45 * Math.sin(g_seconds));
-    }*/
-
     // Poke animation takes priority
     if (g_pokeAnimation) {
         let elapsedTime = g_seconds - g_pokeStartTime;
@@ -474,7 +438,6 @@ function updateAnimationAngles() {
 }
 
 function keydown(ev) {
-    // Calculate forward and right vectors
     let forward = [g_at[0] - g_eye[0], g_at[1] - g_eye[1], g_at[2] - g_eye[2]];
     let fLen = Math.sqrt(forward[0] ** 2 + forward[1] ** 2 + forward[2] ** 2);
     forward = [forward[0] / fLen, forward[1] / fLen, forward[2] / fLen];
@@ -488,89 +451,30 @@ function keydown(ev) {
     right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
 
     let speed = 0.2;
+    let moved = false;
 
-    if (ev.keyCode == 68) { // D - right
-        let newEye = [
-            g_eye[0] + right[0] * speed,
-            g_eye[1] + right[1] * speed,
-            g_eye[2] + right[2] * speed
-        ];
-        if (!checkCollision(newEye)) {
-            g_eye[0] = newEye[0];
-            g_eye[1] = newEye[1];
-            g_eye[2] = newEye[2];
-            g_at[0] += right[0] * speed;
-            g_at[1] += right[1] * speed;
-            g_at[2] += right[2] * speed;
-        }
-    } else if (ev.keyCode == 65) { // A - left
-        let newEye = [
-            g_eye[0] - right[0] * speed,
-            g_eye[1] - right[1] * speed,
-            g_eye[2] - right[2] * speed
-        ];
-        if (!checkCollision(newEye)) {
-            g_eye[0] = newEye[0];
-            g_eye[1] = newEye[1];
-            g_eye[2] = newEye[2];
-            g_at[0] -= right[0] * speed;
-            g_at[1] -= right[1] * speed;
-            g_at[2] -= right[2] * speed;
-        }
-    } else if (ev.keyCode == 87) { // W - forward
-        let newEye = [
-            g_eye[0] + forward[0] * speed,
-            g_eye[1] + forward[1] * speed,
-            g_eye[2] + forward[2] * speed
-        ];
-        if (!checkCollision(newEye)) {
-            g_eye[0] = newEye[0];
-            g_eye[1] = newEye[1];
-            g_eye[2] = newEye[2];
-            g_at[0] += forward[0] * speed;
-            g_at[1] += forward[1] * speed;
-            g_at[2] += forward[2] * speed;
-        }
-    } else if (ev.keyCode == 83) { // S - backward
-        let newEye = [
-            g_eye[0] - forward[0] * speed,
-            g_eye[1] - forward[1] * speed,
-            g_eye[2] - forward[2] * speed
-        ];
-        if (!checkCollision(newEye)) {
-            g_eye[0] = newEye[0];
-            g_eye[1] = newEye[1];
-            g_eye[2] = newEye[2];
-            g_at[0] -= forward[0] * speed;
-            g_at[1] -= forward[1] * speed;
-            g_at[2] -= forward[2] * speed;
-        }
+    if (ev.keyCode == 68) { // D
+        let newEye = [g_eye[0] + right[0] * speed, g_eye[1] + right[1] * speed, g_eye[2] + right[2] * speed];
+        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
+    } else if (ev.keyCode == 65) { // A
+        let newEye = [g_eye[0] - right[0] * speed, g_eye[1] - right[1] * speed, g_eye[2] - right[2] * speed];
+        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
+    } else if (ev.keyCode == 87) { // W
+        let newEye = [g_eye[0] + forward[0] * speed, g_eye[1] + forward[1] * speed, g_eye[2] + forward[2] * speed];
+        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
+    } else if (ev.keyCode == 83) { // S
+        let newEye = [g_eye[0] - forward[0] * speed, g_eye[1] - forward[1] * speed, g_eye[2] - forward[2] * speed];
+        if (!checkCollision(newEye)) { g_eye = newEye; moved = true; }
     } else if (ev.keyCode == 81) { // Q - turn left
-    rotateCamera(5);   // rotate 5 degrees left
+        g_cameraYaw -= 5;
+        moved = true;
     } else if (ev.keyCode == 69) { // E - turn right
-    rotateCamera(-5);  // rotate 5 degrees right
-}
+        g_cameraYaw += 5;
+        moved = true;
+    }
 
-
-    renderAllshapes();
-}
-
-function rotateCamera(angle) {
-    let rad = angle * Math.PI / 180;
-
-    // forward vector
-    let forward = [
-        g_at[0] - g_eye[0],
-        g_at[1] - g_eye[1],
-        g_at[2] - g_eye[2]
-    ];
-
-    // Rotate around Y axis
-    let newX = forward[0] * Math.cos(rad) - forward[2] * Math.sin(rad);
-    let newZ = forward[0] * Math.sin(rad) + forward[2] * Math.cos(rad);
-
-    g_at[0] = g_eye[0] + newX;
-    g_at[2] = g_eye[2] + newZ;
+    // Always update g_at to stay anchored to g_eye with current Yaw/Pitch
+    if (moved) updateLookAt(); 
 }
 
 // Check if position collides with any cube
@@ -684,6 +588,18 @@ var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, 0];
 var g_up = [0, 1, 0];
 
+// Update Look At Function (MOVED TO GLOBAL SCOPE)
+function updateLookAt() {
+    let radYaw = g_cameraYaw * Math.PI / 180.0;
+    let radPitch = g_cameraPitch * Math.PI / 180.0;
+    let r = 10; // Distance of the look-at point
+    
+    // Calculate new target point based on eye position and angles
+    g_at[0] = g_eye[0] + r * Math.cos(radPitch) * Math.cos(radYaw);
+    g_at[1] = g_eye[1] + r * Math.sin(radPitch);
+    g_at[2] = g_eye[2] + r * Math.cos(radPitch) * Math.sin(radYaw);
+}
+
 function drawMap(){
     for(x=0;x<32;x++){
         for(y=0;y<32;y++){
@@ -722,25 +638,12 @@ function renderAllshapes() {
     );
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
 
-    // Set up global rotation matrix (for mouse/angle controls)
+    // Set up global rotation matrix (only for slider angles now)
     var globalRotMat = new Matrix4()
-        .rotate(g_globalAngle, 0, 1, 0)
-        .rotate(g_mouseXRotation, 1, 0, 0)
-        .rotate(g_mouseYRotation, 0, 1, 0);
+        .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
-
-    // Set up global rotation matrix (for mouse/angle controls)
-    var globalRotMat = new Matrix4()
-        .rotate(g_globalAngle, 0, 1, 0)
-        .rotate(g_mouseXRotation, 1, 0, 0)
-        .rotate(g_mouseYRotation, 0, 1, 0);
-    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
-
-    //Draw a test triangle
-    //drawTriangle([-1.0, 0.0, 0.0,    -0.5, -1.0, 0.0,   0.0, 0.0, 0.0]);
 
     //draw a cube
-
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
     body.matrix.translate(0, 0, 0.0);
@@ -791,11 +694,10 @@ function renderAllshapes() {
     //drawKoala();
     drawMap();
 
-
-
     var duration = performance.now() - startTime;
     sendTextToHTML(" fps: " + Math.floor(10000 / duration), "numdot");
 }
+
 function drawKoala() {
     // Koala colors
     var koalaGray = [0.6, 0.6, 0.65, 1.0];
@@ -1004,15 +906,6 @@ function drawKoala() {
 
     tree.matrix.scale(2, 0.3, 0.5);
     tree.render();
-}
-
-function sendTextToHTML(text, htmlID) {
-    var htmlElm = document.getElementById(htmlID);
-    if (!htmlElm) {
-        console.log("Failed to get" + htmlID + "from HTML");
-        return;
-    }
-    htmlElm.innerHTML = text;
 }
 
 function sendTextToHTML(text, htmlID) {
