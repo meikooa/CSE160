@@ -173,7 +173,7 @@ function initTextures() {
     // Register the event handler to be called on loading an image
     image.onload = function () { SendTextureToGLSL(image); };
     // Tell the browser to load an image
-    image.src = '../resources/sky.jpg';
+    image.src = 'wall.jpg';
 
     return true;
 }
@@ -520,12 +520,13 @@ function drawMap(){
     for(x=0;x<32;x++){
         for(y=0;y<32;y++){
             if(x ==0 || x == 31 || y == 0 || y == 31){
-                        var body = new Cube();
-                        body.color = [1.0, 1.0, 1.0, 1.0];
-                        body.matrix.translate(0, -0.75, 0);
-                        body.matrix.scale(0.5, 0.5, 0.5);
-                        body.matrix.translate(x-16,-0.75,y-16);
-                        body.renderfast();
+                        var wall = new Cube();
+                        wall.color = [1.0, 1.0, 1.0, 1.0];
+                        wall.matrix.translate(0, -0.75, 0);
+                        wall.matrix.scale(0.5, 0.5, 0.5);
+                        wall.matrix.translate(x-16,-0.75,y-16);
+                        wall.textureNum = 0;
+                        wall.renderfast();
                 
             }
         }
