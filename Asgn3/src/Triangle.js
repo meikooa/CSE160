@@ -111,7 +111,6 @@ function drawTriangle(vertices) {
 
 }
 
-var g_vertexBuffer = null;
 function initTriangle3D() {
     var n = 3; // The number of vertices
 

@@ -473,10 +473,34 @@ function keydown(ev) {
         g_at[0] -= forward[0] * speed;
         g_at[1] -= forward[1] * speed;
         g_at[2] -= forward[2] * speed;
-    }
+    } else if (ev.keyCode == 81) { // Q - turn left
+    rotateCamera(5);   // rotate 5 degrees left
+    } else if (ev.keyCode == 69) { // E - turn right
+    rotateCamera(-5);  // rotate 5 degrees right
+}
+
 
     renderAllshapes();
 }
+
+function rotateCamera(angle) {
+    let rad = angle * Math.PI / 180;
+
+    // forward vector
+    let forward = [
+        g_at[0] - g_eye[0],
+        g_at[1] - g_eye[1],
+        g_at[2] - g_eye[2]
+    ];
+
+    // Rotate around Y axis
+    let newX = forward[0] * Math.cos(rad) - forward[2] * Math.sin(rad);
+    let newZ = forward[0] * Math.sin(rad) + forward[2] * Math.cos(rad);
+
+    g_at[0] = g_eye[0] + newX;
+    g_at[2] = g_eye[2] + newZ;
+}
+
 
 var g_eye = [0, 0.5, 3];
 var g_at = [0, 0, 0];
@@ -558,22 +582,22 @@ function renderAllshapes() {
 
     //draw the floor
     var floor = new Cube();
-    floor.color = [1.0, 0.0, 0.0, 1.0];
-    floor.matrix.translate(0, -0.5, 0.0);
-    floor.matrix.scale(10, 0, 10);
+    floor.color = [0.0, 1.0, 0.0, 1.0];
+    floor.matrix.translate(0, -1.1, 0.0);
+    floor.matrix.scale(15, 0, 15);
     floor.matrix.translate(-0.5, 0, -0.5);
-    floor.textureNum = -1;
+    floor.textureNum = -2;
     floor.render();
 
     
     //draw the skye
-    var floor = new Cube();
-    floor.color = [1.0, 0.0, 0.0, 1.0];
-    floor.matrix.translate(-0.0, -1.5, -0.0);
-    floor.matrix.scale(50, 50, 50);
-    floor.matrix.translate(-0.5, 0, -0.5);
-    floor.textureNum = 0;
-    floor.render();
+    var sky = new Cube();
+    sky.color = [0.0, 0.0, 1.0, 0.9];
+    sky.matrix.translate(0, -1.5, 0);
+    sky.matrix.scale(50, 50, 50);
+    sky.matrix.translate(-0.5, 0, -0.5);
+    sky.textureNum = -2;
+    sky.render();
 
     //drawKoala();
     drawMap();
