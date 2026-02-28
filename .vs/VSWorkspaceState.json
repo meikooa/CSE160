@@ -1,9 +1,12 @@
 {
   "ExpandedNodes": [
     "",
+    "\\Asgn3",
+    "\\Asgn3\\resources",
+    "\\Asgn3\\src",
     "\\Asgn4",
     "\\Asgn4\\src"
   ],
-  "SelectedNode": "\\Asgn4\\src\\World.html",
+  "SelectedNode": "\\Asgn3\\src\\Word.js",
   "PreviewInSolutionExplorer": false
 }
