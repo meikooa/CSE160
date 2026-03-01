@@ -8,6 +8,7 @@ var VSHADER_SOURCE = `
 
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ProjectionMatrix;
@@ -16,6 +17,7 @@ var VSHADER_SOURCE = `
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
     v_Normal = a_Normal;
+    v_VertPos = u_ModelMatrix * a_Position;
   }`
 
 // Fragment shader program
@@ -23,12 +25,15 @@ var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying vec4 v_VertPos;
+  uniform vec3 u_lightPos;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
   uniform sampler2D u_Sampler3;
   uniform int u_whichTexture;
+
 
   void main() {
       if(u_whichTexture == -3){ // Use Normal
@@ -49,6 +54,13 @@ var FSHADER_SOURCE = `
    }else{ // Error, put redlish
        gl_FragColor = vec4(1,0.2,0.2,1);
    }
+       vec3 lightVector = vec3(v_VertPos) - u_lightPos;
+       float r = length(lightVector);
+       if(r <1.0){
+              gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+         }else if(r < 2.0){
+                gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+        }
   }`
 
 // Constants
@@ -73,6 +85,7 @@ let u_Sampler1;
 let u_Sampler2;
 let u_Sampler3;
 let u_whichTexture;
+let u_lightPos;
 
 let g_selectSize = 10.0;
 let g_selectType = POINT;
@@ -158,6 +171,13 @@ function connetVariablesToGLSL() {
 
     u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
     if (!u_FragColor) return;
+
+    u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+    if (u_lightPos === null) {
+    console.log('Failed to get u_lightPos');
+    return;
+    }
+
 
     u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
     if (!u_ModelMatrix) return;
@@ -614,11 +634,11 @@ function renderAllshapes() {
         .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
-        
+    gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
     var light = new Cube();
     light.color = [2.0, 2.0, 0.0, 1.0];
     light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-    light.matrix.scale(0.2, 0.2, 0.2);
+    light.matrix.scale(0.1, 0.1, 0.1);
     light.matrix.translate(-0.5, -0.5, -0.5);
     light.render();
 
