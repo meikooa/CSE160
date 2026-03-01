@@ -4,7 +4,10 @@ var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
   attribute vec2 a_UV;
+  attribute vec3 a_Normal;
+
   varying vec2 v_UV;
+  varying vec3 v_Normal;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ProjectionMatrix;
@@ -12,12 +15,14 @@ var VSHADER_SOURCE = `
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
+    v_Normal = a_Normal;
   }`
 
 // Fragment shader program
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
+  varying vec3 v_Normal;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
@@ -26,7 +31,9 @@ var FSHADER_SOURCE = `
   uniform int u_whichTexture;
 
   void main() {
-   if(u_whichTexture == -2){ // Use color
+      if(u_whichTexture == -3){ // Use Normal
+       gl_FragColor = vec4((v_Normal+1.0)/2.0,1.0);
+   }else if(u_whichTexture == -2){ // Use color
        gl_FragColor = u_FragColor;
    }else if(u_whichTexture == -1){ // use UV DEBUG
       gl_FragColor = vec4(v_UV,1.0,1.0);
@@ -86,6 +93,9 @@ let g_rightLegUpper = 10;
 let g_rightLegLower = -30;
 let g_earAngle = 0;
 let g_koalaAnimation = false;
+let g_normalMode = false; // New variable to toggle normal visualization
+let g_lightPos = [0.0, 1.0,-2.0]; // Default light position
+
 
 // Mouse rotation variables
 let g_mouseXRotation = 0;
@@ -139,6 +149,12 @@ function connetVariablesToGLSL() {
 
     a_UV = gl.getAttribLocation(gl.program, 'a_UV');
     if (a_UV < 0) return;
+
+    a_Normal = gl.getAttribLocation(gl.program, 'a_Normal');
+    if (a_Normal < 0) {
+        console.log('Failed to get a_Normal');
+        return
+    };
 
     u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
     if (!u_FragColor) return;
@@ -228,6 +244,8 @@ function SendTextureToGLSL(image, texUnit) {
 let g_selectedColor = [1.0, 1.0, 1.0, 1.0]; //White
 
 function addActionsForHtmlUI() {
+    document.getElementById('normalON').onclick = function () { g_normalMode = true; }; // Normal
+    document.getElementById('normalOFF').onclick = function () { g_normalMode = false; }; // Normal
     document.getElementById('green').onclick = function () { g_selectedColor = [0.0, 1.0, 0.0, 1.0]; }; // Green
     document.getElementById('red').onclick = function () { g_selectedColor = [1.0, 0.0, 0.0, 1.0]; }; // Red
     document.getElementById('clearButton').onclick = function () { g_shapesList = []; renderAllshapes(); };
@@ -238,14 +256,20 @@ function addActionsForHtmlUI() {
     document.getElementById("animationYellowOnButton").onclick = function () { g_koalaAnimation = true };
     document.getElementById("animationYellowOffButton").onclick = function () { g_koalaAnimation = false };
 
+
     document.getElementById('redSlide').addEventListener('mouseup', function () { g_selectedColor[0] = this.value / 100; });
     document.getElementById('greenSlide').addEventListener('mouseup', function () { g_selectedColor[1] = this.value / 100; });
     document.getElementById('blueSlide').addEventListener('mouseup', function () { g_selectedColor[2] = this.value / 100; });
     document.getElementById('sizeSlide').addEventListener('mouseup', function () { g_selectSize = this.value; });
     document.getElementById('Segment').addEventListener('mouseup', function () { g_segCount = this.value; });
+    
 
     document.getElementById('angleSlide').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllshapes(); });
     document.getElementById('yellowSlide').addEventListener('mousemove', function () { g_yellowAngle = this.value; renderAllshapes(); });
+    document.getElementById('lightSlideX').addEventListener('mousemove', function (ev) { if(ev.buttons === 1) { g_lightPos[0]=this.value/100;renderAllshapes(); } });
+    document.getElementById('lightSlideY').addEventListener('mousemove', function (ev) { if(ev.buttons === 1) { g_lightPos[1]=this.value/100;renderAllshapes(); } });
+    document.getElementById('lightSlideZ').addEventListener('mousemove', function (ev) { if(ev.buttons === 1) { g_lightPos[2]=this.value/100;renderAllshapes(); } });
+    
 }
 
 function main() {
@@ -590,28 +614,65 @@ function renderAllshapes() {
         .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
+        
+    var light = new Cube();
+    light.color = [2.0, 2.0, 0.0, 1.0];
+    light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+    light.matrix.scale(0.2, 0.2, 0.2);
+    light.matrix.translate(-0.5, -0.5, -0.5);
+    light.render();
+
     var body = new Cube();
     body.color = [1.0, 0.0, 0.0, 1.0];
+    if(g_normalMode) {
+        body.textureNum = -3;// Normal visualization
+    } else {
+        body.textureNum = 0; // wall.jpg
+    }
     body.matrix.translate(0, 0, 0.0);
     body.matrix.scale(0.5, 0.3, 0.5);
-    body.textureNum = 0;
+    //body.textureNum = 0;
     body.render();
 
     var floor = new Cube();
     floor.color = [0.0, 1.0, 0.0, 1.0];
+    if(g_normalMode){
+        floor.textureNum = -3; // Normal visualization
+    } else{
+        floor.textureNum = -2;
+    }
     floor.matrix.translate(0, -1.1, 0.0);
     floor.matrix.scale(15, 0, 15);
     floor.matrix.translate(-0.5, 0, -0.5);
-    floor.textureNum = -2;
+    //floor.textureNum = -2;
     floor.render();
     
     var sky = new Cube();
     sky.color = [0.0, 0.0, 1.0, 0.9];
+    if(g_normalMode){
+        sky.textureNum = -3; // Normal visualization
+    } else{
+         sky.textureNum = -2;
+
+    }
     sky.matrix.translate(0, -1.5, 0);
     sky.matrix.scale(50, 50, 50);
     sky.matrix.translate(-0.5, 0, -0.5);
-    sky.textureNum = -2;
+    //sky.textureNum = -2;
     sky.render();
+
+    
+   var testball = new Sphere();
+    testball.color = [1.0, 1.0, 0.0, 1.0];
+    if(g_normalMode){
+        testball.textureNum = -3; // Normal visualization   
+    } else{
+        testball.textureNum = -2; // Color
+    }
+    testball.matrix.translate(0, 0.5, 0);
+    testball.matrix.scale(0.5, 0.5, 0.5);
+    //testball.textureNum = -2;
+    testball.render();
 
     for (let x = 0; x < 32; x++) {
         for (let y = 0; y < 32; y++) {
@@ -641,7 +702,7 @@ function renderAllshapes() {
     var duration = performance.now() - startTime;
     sendTextToHTML(" fps: " + Math.floor(10000 / duration), "numdot");
 }
-
+/*
 function drawKoala() {
     var koalaGray = [0.6, 0.6, 0.65, 1.0];
     var koalaDarkGray = [0.4, 0.4, 0.45, 1.0];
@@ -824,7 +885,7 @@ function drawKoala() {
     tree.matrix.rotate(90, 0, 0, 1);
     tree.matrix.scale(2, 0.3, 0.5);
     tree.render();
-}
+}*/
 
 function sendTextToHTML(text, htmlID) {
     var htmlElm = document.getElementById(htmlID);
