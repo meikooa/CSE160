@@ -108,6 +108,7 @@ let g_earAngle = 0;
 let g_koalaAnimation = false;
 let g_normalMode = false; // New variable to toggle normal visualization
 let g_lightPos = [0.0, 1.0,-2.0]; // Default light position
+let g_magentaAngle;
 
 
 // Mouse rotation variables
@@ -350,10 +351,25 @@ var headSphere = new Sphere();
 headSphere.segments = 10;
 
 function tick() {
-    g_seconds = performance.now() / 100.0 - g_startTime;
+
+    updateAnimationAngles();
+
+    //g_seconds = performance.now() / 100.0 - g_startTime;
     updateAnimationAngles();
     renderAllshapes();
-    requestAnimationFrame(tick);
+    //requestAnimationFrame(tick);
+}
+
+function updateAnimationAngles() {
+    if (g_yellowAnimation) {
+        g_yellowAngle = (45*Math.sin(g_seconds));
+    } 
+    if (g_koalaAnimation) {
+        g_magentaAngle = (45*Math.sin(3*g_seconds));
+    }
+
+    g_lightPos[0] = cos(g_seconds);
+
 }
 
 function click(ev) {
