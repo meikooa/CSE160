@@ -28,6 +28,7 @@ var FSHADER_SOURCE = `
   varying vec4 v_VertPos;
   uniform vec3 u_lightPos;
   uniform vec4 u_FragColor;
+  uniform vec3 u_cameraPos;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
@@ -38,7 +39,7 @@ var FSHADER_SOURCE = `
   void main() {
       if(u_whichTexture == -3){ // Use Normal
        gl_FragColor = vec4((v_Normal+1.0)/2.0,1.0);
-   }else if(u_whichTexture == -2){ // Use color
+   }else if(u_whichTexture == -2 || u_whichTexture == -4 || u_whichTexture == -5){ // Use color
        gl_FragColor = u_FragColor;
    }else if(u_whichTexture == -1){ // use UV DEBUG
       gl_FragColor = vec4(v_UV,1.0,1.0);
@@ -56,11 +57,33 @@ var FSHADER_SOURCE = `
    }
        vec3 lightVector = vec3(v_VertPos) - u_lightPos;
        float r = length(lightVector);
-       if(r <1.0){
-              gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-         }else if(r < 2.0){
-                gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+
+       //if(r <1.0){
+        //      gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        // }else if(r < 2.0){
+        //        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+        //}
+
+
+        vec3 L = normalize(lightVector);
+        vec3 N = normalize(v_Normal);
+        float nDotL = max(dot(N, L), 0.0);
+
+        //Refletion
+        vec3 R = reflect(L, N);
+
+        //eye
+        vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+
+        // Disable specular only for floor (-4) and sky (-5)
+        float specular = 0.0;
+        if (u_whichTexture != -4 && u_whichTexture != -5) {
+          specular = pow(max(dot(R, E), 0.0), 10.0);
         }
+
+        vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
+        vec3 ambient = vec3(gl_FragColor) * 0.3;
+        gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
   }`
 
 // Constants
@@ -86,6 +109,7 @@ let u_Sampler2;
 let u_Sampler3;
 let u_whichTexture;
 let u_lightPos;
+let u_cameraPos;
 
 let g_selectSize = 10.0;
 let g_selectType = POINT;
@@ -155,6 +179,12 @@ function setupWebGL() {
 function connetVariablesToGLSL() {
     if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
         console.log('Failed to intialize shaders.');
+        return;
+    }
+
+    u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+    if (!u_cameraPos) {
+        console.log('Failed to get u_cameraPos');
         return;
     }
 
@@ -612,7 +642,7 @@ function updateLookAt() {
     g_at[1] = g_eye[1] + r * Math.sin(radPitch);
     g_at[2] = g_eye[2] + r * Math.cos(radPitch) * Math.sin(radYaw);
 }
-
+/*
 function drawMap(){
     for(let x=0;x<32;x++){
         for(let y=0;y<32;y++){
@@ -627,7 +657,7 @@ function drawMap(){
             }
         }
     }
-}
+}*/
 
 function renderAllshapes() {
     var startTime = performance.now();
@@ -651,10 +681,13 @@ function renderAllshapes() {
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
     gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+    gl.uniform3f(u_cameraPos, g_eye[0], g_eye[1], g_eye[2]);
+
+    
     var light = new Cube();
     light.color = [2.0, 2.0, 0.0, 1.0];
     light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-    light.matrix.scale(0.1, 0.1, 0.1);
+    light.matrix.scale(-0.1, -0.1, -0.1);
     light.matrix.translate(-0.5, -0.5, -0.5);
     light.render();
 
@@ -675,10 +708,10 @@ function renderAllshapes() {
     if(g_normalMode){
         floor.textureNum = -3; // Normal visualization
     } else{
-        floor.textureNum = -2;
+        floor.textureNum = -4; // Color, no specular
     }
     floor.matrix.translate(0, -1.1, 0.0);
-    floor.matrix.scale(15, 0, 15);
+    floor.matrix.scale(5, 0, 5);
     floor.matrix.translate(-0.5, 0, -0.5);
     //floor.textureNum = -2;
     floor.render();
@@ -688,11 +721,11 @@ function renderAllshapes() {
     if(g_normalMode){
         sky.textureNum = -3; // Normal visualization
     } else{
-         sky.textureNum = -2;
+         sky.textureNum = -5; // Color, no specular
 
     }
     sky.matrix.translate(0, -1.5, 0);
-    sky.matrix.scale(50, 50, 50);
+    sky.matrix.scale(6, 6, 6);
     sky.matrix.translate(-0.5, 0, -0.5);
     //sky.textureNum = -2;
     sky.render();
@@ -710,9 +743,10 @@ function renderAllshapes() {
     //testball.textureNum = -2;
     testball.render();
 
-    for (let x = 0; x < 32; x++) {
-        for (let y = 0; y < 32; y++) {
-            for (let z = 0; z < 32; z++) {
+    /*
+    for (let x = 0; x < 16; x++) {
+        for (let y = 0; y < 16; y++) {
+            for (let z = 0; z < 16; z++) {
                 if (g_map[x][y][z] !== 0) {
                     let cube = new Cube();
                     cube.matrix.translate(x, y, z);
@@ -731,9 +765,9 @@ function renderAllshapes() {
                 }
             }
         }
-    }
+    }*/
 
-    drawMap();
+    //drawMap();
 
     var duration = performance.now() - startTime;
     sendTextToHTML(" fps: " + Math.floor(10000 / duration), "numdot");
