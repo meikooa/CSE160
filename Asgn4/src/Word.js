@@ -29,6 +29,7 @@ var FSHADER_SOURCE = `
   uniform vec3 u_lightPos;
   uniform vec4 u_FragColor;
   uniform vec3 u_cameraPos;
+  uniform bool u_lightOn;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
@@ -83,7 +84,12 @@ var FSHADER_SOURCE = `
 
         vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
         vec3 ambient = vec3(gl_FragColor) * 0.3;
-        gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+
+        if(u_lightOn){
+          gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+          }else{
+            gl_FragColor = vec4(diffuse + ambient, 1.0); // Dim the color when light is off
+            }
   }`
 
 // Constants
@@ -110,6 +116,7 @@ let u_Sampler3;
 let u_whichTexture;
 let u_lightPos;
 let u_cameraPos;
+let u_lightOn;
 
 let g_selectSize = 10.0;
 let g_selectType = POINT;
@@ -117,6 +124,7 @@ let g_segCount = 20;
 let g_globalAngle = 0;
 let g_yellowAngle = 0
 let g_yellowAnimation = false;
+let g_lightOn = true;
 
 // Koala animation variables
 let g_headAngle = 0;
@@ -179,6 +187,12 @@ function setupWebGL() {
 function connetVariablesToGLSL() {
     if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
         console.log('Failed to intialize shaders.');
+        return;
+    }
+
+    u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
+    if (u_lightOn === null) {
+        console.log('Failed to get u_lightOn');
         return;
     }
 
@@ -295,6 +309,9 @@ function SendTextureToGLSL(image, texUnit) {
 let g_selectedColor = [1.0, 1.0, 1.0, 1.0]; //White
 
 function addActionsForHtmlUI() {
+
+    document.getElementById('lightON').onclick = function () { g_lightOn = true; renderAllshapes(); }; // Light ON
+    document.getElementById('lightOFF').onclick = function () { g_lightOn = false; renderAllshapes(); }; // Light OFF
     document.getElementById('normalON').onclick = function () { g_normalMode = true; }; // Normal
     document.getElementById('normalOFF').onclick = function () { g_normalMode = false; }; // Normal
     document.getElementById('green').onclick = function () { g_selectedColor = [0.0, 1.0, 0.0, 1.0]; }; // Green
@@ -683,6 +700,7 @@ function renderAllshapes() {
     gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
     gl.uniform3f(u_cameraPos, g_eye[0], g_eye[1], g_eye[2]);
 
+    gl.uniform1i(u_lightOn, g_lightOn); // Turn on lighting
     
     var light = new Cube();
     light.color = [2.0, 2.0, 0.0, 1.0];
