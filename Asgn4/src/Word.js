@@ -608,6 +608,7 @@ function getMapSquareInFront() {
     if (fLen > 0) {
         forward = [forward[0] / fLen, 0, forward[2] / fLen];
     }
+    //update
     
     // Look ~2 units ahead in the XZ plane
     let targetX = Math.floor(g_eye[0] + forward[0] * 2);

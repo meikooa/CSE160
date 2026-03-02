@@ -9,6 +9,7 @@ class Cube {
         this.matrix = new Matrix4();
         this.normalMatrix = new Matrix4();
         this.textureNum = -2;
+        //update
     }
 
     render() {
