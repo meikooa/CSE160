@@ -16,7 +16,7 @@ var VSHADER_SOURCE = `
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
-    v_Normal = a_Normal;
+    v_Normal = normalize(vec3(u_ModelMatrix * vec4(a_Normal, 0.0)));
     v_VertPos = u_ModelMatrix * a_Position;
   }`
 
@@ -719,6 +719,8 @@ function renderAllshapes() {
     body.matrix.translate(0, 0, 0.0);
     body.matrix.scale(0.5, 0.3, 0.5);
     //body.textureNum = 0;
+    var bodyCoords = new Matrix4(body.matrix);
+    body.normalMatrix.setInverseOf(body.matrix).transpose();
     body.render();
 
     var floor = new Cube();
@@ -748,7 +750,19 @@ function renderAllshapes() {
     //sky.textureNum = -2;
     sky.render();
 
-    
+    var yellow = new Cube();
+    yellow.textureNum = -3; 
+    yellow.color = [1.0, 1.0, 0.5, 1.0];
+    yellow.matrix.setTranslate(0.5, -1.5, -1.0);
+    yellow.matrix.rotate(-5,1,0,0);
+    yellow.matrix.rotate(-g_yellowAngle, 0, 0, 1);
+    var yellowCoords = new Matrix4(yellow.matrix);
+    yellow.matrix.scale(0.25, 0.7, 0.5);
+    yellow.matrix.translate(-0.5, 0.0, 0.0);
+    yellow.normalMatrix.setInverseOf(yellow.matrix).transpose();
+    yellow.render();
+
+    /*
    var testball = new Sphere();
     testball.color = [1.0, 1.0, 0.0, 1.0];
     if(g_normalMode){
@@ -759,7 +773,7 @@ function renderAllshapes() {
     testball.matrix.translate(0, 0.5, 0);
     testball.matrix.scale(0.5, 0.5, 0.5);
     //testball.textureNum = -2;
-    testball.render();
+    testball.render();*/
 
     //just update
     /*

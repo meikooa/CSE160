@@ -7,6 +7,7 @@ class Cube {
         //this.size = 10.0;
         //this.segments = g_segCount;; 
         this.matrix = new Matrix4();
+        this.normalMatrix = new Matrix4();
         this.textureNum = -2;
     }
 
