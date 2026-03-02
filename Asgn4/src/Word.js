@@ -141,6 +141,7 @@ let g_koalaAnimation = false;
 let g_normalMode = false; // New variable to toggle normal visualization
 let g_lightPos = [0.0, 1.0,-2.0]; // Default light position
 let g_magentaAngle;
+let g_bunnyModel = null;
 
 
 // Mouse rotation variables
@@ -344,6 +345,7 @@ function main() {
     setupWebGL();
     connetVariablesToGLSL()
     addActionsForHtmlUI()
+    loadBunnyModel();
     
     canvas.onmousedown = function (ev) {
         if (document.pointerLockElement !== canvas) {
@@ -398,13 +400,20 @@ var headSphere = new Sphere();
 headSphere.segments = 10;
 
 function tick() {
-
-    updateAnimationAngles();
-
-    //g_seconds = performance.now() / 100.0 - g_startTime;
+    g_seconds = performance.now() / 1000.0 - g_startTime;
     updateAnimationAngles();
     renderAllshapes();
-    //requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
+}
+
+async function loadBunnyModel() {
+    try {
+        g_bunnyModel = await Model.loadOBJ("bunny.obj");
+        g_bunnyModel.color = [0.85, 0.86, 0.9, 1.0];
+        renderAllshapes();
+    } catch (e) {
+        console.log("Failed to load bunny.obj:", e);
+    }
 }
 
 function updateAnimationAngles() {
@@ -762,6 +771,24 @@ function renderAllshapes() {
     yellow.matrix.translate(-0.5, 0.0, 0.0);
     yellow.normalMatrix.setInverseOf(yellow.matrix).transpose();
     yellow.render();
+
+    if (g_bunnyModel) {
+        if (g_normalMode) {
+            g_bunnyModel.textureNum = -3;
+        } else {
+            g_bunnyModel.textureNum = -2;
+        }
+
+        var b = g_bunnyModel.bounds;
+        var maxDim = Math.max(b.size[0], b.size[1], b.size[2]);
+        var s = maxDim > 0 ? 1.5 / maxDim : 1.0;
+
+        g_bunnyModel.matrix.setIdentity();
+        g_bunnyModel.matrix.translate(0.0, -1.0, -0.8);
+        g_bunnyModel.matrix.scale(s, s, s);
+        g_bunnyModel.matrix.translate(-b.center[0], -b.min[1], -b.center[2]);
+        g_bunnyModel.render();
+    }
 
     /*
    var testball = new Sphere();
