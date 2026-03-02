@@ -743,6 +743,7 @@ function renderAllshapes() {
     //testball.textureNum = -2;
     testball.render();
 
+    //just update
     /*
     for (let x = 0; x < 16; x++) {
         for (let y = 0; y < 16; y++) {
