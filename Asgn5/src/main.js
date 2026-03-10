@@ -276,6 +276,10 @@ let enemyKills = 0;
 let mode = 1;
 let pendingRestart = false;
 let multiShotEndsAt = -1;
+let restartDeadline = 0;
+let inventoryItem = null;
+let chestCooldownEndsAt = 0;
+let wandShotsRemaining = 0;
 
 const targetSkillCooldown = 10;
 let lastTargetSkillUse = -1000;
@@ -290,6 +294,7 @@ function showPrompt(text, duration = 1.2) {
 function modeLabel() {
   if (mode === 1) return 'Mode 1 (Rifle)';
   if (mode === 2) return 'Mode 2 (Target Skill)';
+  if (mode === 3) return 'Mode 3 (Held Item)';
   return 'Unknown';
 }
 
@@ -303,18 +308,39 @@ function refreshHud(elapsed = 0) {
     : `${ready.toFixed(1)}/10s`;
   const multiShotLeft = Math.max(0, multiShotEndsAt - elapsed);
   const multiShotState = multiShotLeft > 0 ? `${multiShotLeft.toFixed(1)}s` : 'OFF';
+  let inventoryLabel = 'None';
+  if (inventoryItem === 'Wand') {
+    inventoryLabel = `Wand (${wandShotsRemaining}/10)`;
+  } else if (inventoryItem) {
+    inventoryLabel = inventoryItem;
+  }
+  const restartState = pendingRestart
+    ? `Restart in: ${Math.max(0, restartDeadline - elapsed).toFixed(1)}s`
+    : 'Restart in: -';
 
   controlsInfo.textContent =
 ` ${lockHint}
  WASD move | Q/E turn | Mouse look
  Left click: fire | Right click: place block
- Key 1: rifle mode | Key 2: spawn 4 targets (10s CD)
- F: remove looked-at block
+ Key 1: rifle mode | Key 2: spawn 4 targets (10s CD) | Key 3: use held item
+ F: chest interact / remove looked-at block
  Hits: ${playerHits}/5  Kills: ${enemyKills}  Coins: ${score}
  Skill-2: ${skillState}
  Multishot: ${multiShotState}
+ Item: ${inventoryLabel}
+ ${restartState}
  ${modeLabel()}
  Wow point: Valorant-style gate + FPS combat loop`;
+}
+
+function scheduleRestart(delaySeconds, reason) {
+  if (pendingRestart) return;
+  pendingRestart = true;
+  restartDeadline = clock.elapsedTime + delaySeconds;
+  showPrompt(`${reason} Restarting in ${delaySeconds.toFixed(0)}s`, 2.4);
+  setTimeout(() => {
+    window.location.reload();
+  }, delaySeconds * 1000);
 }
 
 const clock = new THREE.Clock();
@@ -367,6 +393,7 @@ let shootCooldown = 0;
 let damageCooldown = 0;
 const spreadRight = new THREE.Vector3();
 const spreadUp = new THREE.Vector3();
+const interactionVec = new THREE.Vector3();
 
 function activateMultiShot(elapsed) {
   multiShotEndsAt = Math.max(multiShotEndsAt, elapsed) + 3.0;
@@ -542,6 +569,30 @@ function firePlayerBullet() {
   shootCooldown = 0.13;
 }
 
+function fireWandShot() {
+  if (shootCooldown > 0) return false;
+
+  camera.getWorldDirection(lookDirection);
+  spreadRight.crossVectors(lookDirection, worldUp).normalize();
+  if (spreadRight.lengthSq() < 0.000001) spreadRight.set(1, 0, 0);
+  spreadUp.crossVectors(spreadRight, lookDirection).normalize();
+  if (spreadUp.lengthSq() < 0.000001) spreadUp.set(0, 1, 0);
+
+  const rx = randomRange(-0.23, 0.23);
+  const uy = randomRange(-0.2, 0.2);
+  const dir = lookDirection.clone()
+    .addScaledVector(spreadRight, rx)
+    .addScaledVector(spreadUp, uy)
+    .normalize();
+
+  const origin = camera.position.clone()
+    .addScaledVector(lookDirection, 0.9)
+    .addScaledVector(worldUp, -0.05);
+  createBullet(origin, dir, 22, false);
+  shootCooldown = 0.2;
+  return true;
+}
+
 const enemyGroup = new THREE.Group();
 scene.add(enemyGroup);
 const enemies = [];
@@ -708,11 +759,7 @@ function registerPlayerHit() {
   refreshHud(clock.elapsedTime);
 
   if (playerHits >= 5) {
-    pendingRestart = true;
-    controlsInfo.textContent = 'You were hit 5 times. Restarting...';
-    setTimeout(() => {
-      window.location.reload();
-    }, 900);
+    scheduleRestart(0.9, 'You were hit 5 times.');
   }
 }
 
@@ -722,10 +769,19 @@ const modelTemplates = {
   soldier: null,
   coin: null,
   tree: null,
-  treeLong: null
+  treeLong: null,
+  chest: null,
+  potion: null,
+  wand: null
 };
 
 let weaponModel = null;
+const chestModels = [];
+const chestPositions = [
+  new THREE.Vector3(0.3, 1.03, 6.1),
+  new THREE.Vector3(-6.2, 1.03, 1.2),
+  new THREE.Vector3(6.4, 1.03, -2.6)
+];
 const bbox = new THREE.Box3();
 const bboxSize = new THREE.Vector3();
 const bboxCenter = new THREE.Vector3();
@@ -757,6 +813,32 @@ function setupWeaponModel() {
   weaponModel.position.set(0.35, -0.28, -0.8);
   weaponModel.rotation.set(0.03, 0, 0.02);
   weaponModel.scale.setScalar(0.55);
+  weaponModel.userData.handBaseY = -0.28;
+  weaponModel.userData.handBaseRotZ = 0.02;
+  camera.add(weaponModel);
+}
+
+function setupPotionHandModel() {
+  if (weaponModel) camera.remove(weaponModel);
+  const source = modelTemplates.potion ? modelTemplates.potion.clone(true) : fallbackPotion();
+  weaponModel = source;
+  weaponModel.position.set(0.33, -0.3, -0.68);
+  weaponModel.rotation.set(0.12, 0.2, -0.15);
+  weaponModel.scale.setScalar(0.75);
+  weaponModel.userData.handBaseY = -0.3;
+  weaponModel.userData.handBaseRotZ = -0.15;
+  camera.add(weaponModel);
+}
+
+function setupWandHandModel() {
+  if (weaponModel) camera.remove(weaponModel);
+  const source = modelTemplates.wand ? modelTemplates.wand.clone(true) : fallbackWand();
+  weaponModel = source;
+  weaponModel.position.set(0.24, -0.31, -0.62);
+  weaponModel.rotation.set(-0.18, Math.PI + 0.22, -0.55);
+  weaponModel.scale.setScalar(1.1);
+  weaponModel.userData.handBaseY = -0.31;
+  weaponModel.userData.handBaseRotZ = -0.55;
   camera.add(weaponModel);
 }
 
@@ -809,6 +891,52 @@ function fallbackCoin() {
   );
 }
 
+function fallbackChest() {
+  const group = new THREE.Group();
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.7, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x7b4f2d, roughness: 0.5 })
+  );
+  base.position.y = 0.35;
+  group.add(base);
+  const lid = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.3, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x925f36, roughness: 0.45 })
+  );
+  lid.position.y = 0.86;
+  group.add(lid);
+  return group;
+}
+
+function fallbackPotion() {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.16, 0.42, 12),
+    new THREE.MeshStandardMaterial({ color: 0x44ff78, emissive: 0x118838, emissiveIntensity: 0.8 })
+  );
+  body.position.y = 0.2;
+  group.add(body);
+  const top = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07, 0.07, 0.14, 10),
+    new THREE.MeshStandardMaterial({ color: 0xc8c8c8 })
+  );
+  top.position.y = 0.48;
+  group.add(top);
+  return group;
+}
+
+function fallbackWand() {
+  const group = new THREE.Group();
+  const wand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.028, 0.8, 12),
+    new THREE.MeshStandardMaterial({ color: 0x3f2a1a, metalness: 0.1, roughness: 0.6 })
+  );
+  wand.rotation.z = Math.PI / 6;
+  wand.position.set(0.18, 0.1, 0);
+  group.add(wand);
+  return group;
+}
+
 function fallbackTree(scale = 1) {
   const group = new THREE.Group();
   const trunk = new THREE.Mesh(
@@ -833,6 +961,103 @@ function loadModel(path, onSuccess, onFallback) {
     undefined,
     () => onSuccess(onFallback())
   );
+}
+
+function setupChestModel() {
+  while (chestModels.length > 0) {
+    const existing = chestModels.pop();
+    scene.remove(existing);
+  }
+
+  for (let i = 0; i < chestPositions.length; i += 1) {
+    const source = modelTemplates.chest ? modelTemplates.chest.clone(true) : fallbackChest();
+    source.position.copy(chestPositions[i]);
+    scene.add(source);
+    chestModels.push(source);
+  }
+}
+
+function tryInteractChest() {
+  if (chestModels.length === 0) return false;
+  if (pendingRestart) return true;
+
+  let nearestChest = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < chestModels.length; i += 1) {
+    const chest = chestModels[i];
+    interactionVec.copy(chest.position).sub(camera.position);
+    const horizontalDistance = Math.hypot(interactionVec.x, interactionVec.z);
+    if (horizontalDistance < nearestDistance) {
+      nearestDistance = horizontalDistance;
+      nearestChest = chest;
+    }
+  }
+
+  if (!nearestChest || nearestDistance > 1.9) return false;
+
+  const elapsed = clock.elapsedTime;
+  if (elapsed < chestCooldownEndsAt) {
+    showPrompt(`Chest CD ${Math.max(0, chestCooldownEndsAt - elapsed).toFixed(1)}s`);
+    return true;
+  }
+
+  chestCooldownEndsAt = elapsed + 4.5;
+  if (Math.random() < 0.5) {
+    inventoryItem = 'Potion';
+    wandShotsRemaining = 0;
+    showPrompt('Obtained: Complex Health Potion');
+  } else {
+    inventoryItem = 'Wand';
+    wandShotsRemaining = 10;
+    showPrompt('Obtained: Harry Potter Wand (10 shots)');
+  }
+  refreshHud(elapsed);
+  return true;
+}
+
+function useHeldItem() {
+  if (!inventoryItem) {
+    showPrompt('No item in slot');
+    return;
+  }
+
+  if (inventoryItem === 'Potion') {
+    const oldHits = playerHits;
+    playerHits = Math.max(0, playerHits - 3);
+    inventoryItem = null;
+    wandShotsRemaining = 0;
+    mode = 1;
+    setupWeaponModel();
+    showPrompt(`Potion used: hits ${oldHits} -> ${playerHits}`);
+    refreshHud(clock.elapsedTime);
+    return;
+  }
+
+  if (inventoryItem === 'Wand') {
+    if (wandShotsRemaining <= 0) {
+      inventoryItem = null;
+      mode = 1;
+      setupWeaponModel();
+      showPrompt('Wand is empty');
+      refreshHud(clock.elapsedTime);
+      return;
+    }
+
+    const fired = fireWandShot();
+    if (!fired) return;
+
+    wandShotsRemaining -= 1;
+    if (wandShotsRemaining <= 0) {
+      inventoryItem = null;
+      mode = 1;
+      setupWeaponModel();
+      showPrompt('Wand depleted, switched back to rifle');
+    } else {
+      showPrompt(`Wand cast: ${wandShotsRemaining}/10 left`, 0.9);
+    }
+    refreshHud(clock.elapsedTime);
+  }
 }
 
 function placeEnvironmentModels() {
@@ -892,6 +1117,34 @@ loadModel(
 );
 
 loadModel(
+  '../model/Chest.glb',
+  (sceneModel) => {
+    normalizeModelToGround(sceneModel, 1.3, 0.02);
+    modelTemplates.chest = sceneModel;
+    setupChestModel();
+  },
+  fallbackChest
+);
+
+loadModel(
+  '../model/Complex Health Potion.glb',
+  (sceneModel) => {
+    normalizeModelToGround(sceneModel, 0.65, 0);
+    modelTemplates.potion = sceneModel;
+  },
+  fallbackPotion
+);
+
+loadModel(
+  '../model/harry potter wand.glb',
+  (sceneModel) => {
+    normalizeModelToGround(sceneModel, 0.75, 0);
+    modelTemplates.wand = sceneModel;
+  },
+  fallbackWand
+);
+
+loadModel(
   '../model/Tree.glb',
   (sceneModel) => {
     normalizeModelToGround(sceneModel, 3.0, 0.0);
@@ -912,6 +1165,7 @@ loadModel(
 );
 
 setupWeaponModel();
+setupChestModel();
 
 let activeCoin = null;
 let coinRespawnTimer = 1.5;
@@ -959,6 +1213,9 @@ function updateCoin(delta, elapsed) {
     refreshHud(elapsed);
     removeCoin();
     coinRespawnTimer = randomRange(1.6, 4.5);
+    if (score >= 10) {
+      scheduleRestart(10, 'Task complete: 10 coins collected.');
+    }
     return;
   }
 
@@ -979,7 +1236,11 @@ renderer.domElement.addEventListener('mousedown', (ev) => {
   }
 
   if (ev.button === 0) {
-    firePlayerBullet();
+    if (mode === 3) {
+      useHeldItem();
+    } else {
+      firePlayerBullet();
+    }
   } else if (ev.button === 2) {
     placeBlock();
   }
@@ -1005,9 +1266,11 @@ document.addEventListener('keydown', (ev) => {
 
   if (ev.code === 'Digit1') {
     mode = 1;
+    setupWeaponModel();
     showPrompt('Mode 1 ready: Rifle');
   } else if (ev.code === 'Digit2') {
     mode = 2;
+    setupWeaponModel();
     const elapsed = clock.elapsedTime;
     const ready = elapsed - lastTargetSkillUse;
     if (ready >= targetSkillCooldown) {
@@ -1017,8 +1280,22 @@ document.addEventListener('keydown', (ev) => {
     } else {
       showPrompt(`${ready.toFixed(1)}/10s`);
     }
+  } else if (ev.code === 'Digit3') {
+    if (inventoryItem === 'Potion') {
+      mode = 3;
+      setupPotionHandModel();
+      showPrompt('Holding: Complex Health Potion');
+    } else if (inventoryItem === 'Wand' && wandShotsRemaining > 0) {
+      mode = 3;
+      setupWandHandModel();
+      showPrompt(`Holding: Harry Potter Wand (${wandShotsRemaining}/10)`);
+    } else {
+      showPrompt('No item to hold');
+    }
   } else if (ev.code === 'KeyF') {
-    removeLookedAtBlock();
+    if (!tryInteractChest()) {
+      removeLookedAtBlock();
+    }
   }
 
   refreshHud(clock.elapsedTime);
@@ -1033,15 +1310,20 @@ function animate() {
 
   const delta = Math.min(clock.getDelta(), 0.05);
   const elapsed = clock.elapsedTime;
-  if (pendingRestart) return;
-
-  if (shootCooldown > 0) shootCooldown -= delta;
-  if (damageCooldown > 0) damageCooldown -= delta;
 
   if (promptTimer > 0) {
     promptTimer -= delta;
     if (promptTimer <= 0) statusPrompt.style.opacity = '0';
   }
+
+  if (pendingRestart) {
+    refreshHud(elapsed);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  if (shootCooldown > 0) shootCooldown -= delta;
+  if (damageCooldown > 0) damageCooldown -= delta;
 
   updateMovement(delta);
   updateEnemies(delta, elapsed);
@@ -1063,8 +1345,10 @@ function animate() {
   }
 
   if (weaponModel) {
-    weaponModel.position.y = -0.28 + Math.sin(elapsed * 8.0) * 0.01;
-    weaponModel.rotation.z = 0.02 + Math.sin(elapsed * 5.5) * 0.01;
+    const handBaseY = weaponModel.userData.handBaseY ?? -0.28;
+    const handBaseRotZ = weaponModel.userData.handBaseRotZ ?? 0.02;
+    weaponModel.position.y = handBaseY + Math.sin(elapsed * 8.0) * 0.01;
+    weaponModel.rotation.z = handBaseRotZ + Math.sin(elapsed * 5.5) * 0.01;
   }
 
   refreshHud(elapsed);
