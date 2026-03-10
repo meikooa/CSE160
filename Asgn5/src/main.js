@@ -175,6 +175,7 @@ const decorGroup = new THREE.Group();
 scene.add(decorGroup);
 const decorModelGroup = new THREE.Group();
 scene.add(decorModelGroup);
+const destructibleSkyOrbs = [];
 
 function addDecorProps() {
   const crateMat = new THREE.MeshStandardMaterial({ map: woodTexture });
@@ -203,12 +204,19 @@ function addDecorProps() {
   }
 
   const orbPositions = [
-    [-6, 2.2, 6], [-2, 2.0, -2], [2, 2.1, 3], [6, 2.0, -6], [0, 2.5, -5], [5, 2.4, 5]
+    [-6, 4.8, 6], [-2, 5.4, -2], [2, 4.6, 3], [6, 5.2, -6], [0, 6.1, -5], [5, 5.0, 5]
   ];
-  for (const [x, y, z] of orbPositions) {
+  for (let i = 0; i < orbPositions.length; i += 1) {
+    const [x, y, z] = orbPositions[i];
     const orb = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 14), orbMat);
     orb.position.set(x, y, z);
+    orb.userData = {
+      isSkyOrb: true,
+      baseY: y,
+      phase: i * 0.9
+    };
     decorGroup.add(orb);
+    destructibleSkyOrbs.push(orb);
   }
 }
 
@@ -267,6 +275,7 @@ let playerHits = 0;
 let enemyKills = 0;
 let mode = 1;
 let pendingRestart = false;
+let multiShotEndsAt = -1;
 
 const targetSkillCooldown = 10;
 let lastTargetSkillUse = -1000;
@@ -292,6 +301,8 @@ function refreshHud(elapsed = 0) {
   const skillState = ready >= targetSkillCooldown
     ? 'Ready'
     : `${ready.toFixed(1)}/10s`;
+  const multiShotLeft = Math.max(0, multiShotEndsAt - elapsed);
+  const multiShotState = multiShotLeft > 0 ? `${multiShotLeft.toFixed(1)}s` : 'OFF';
 
   controlsInfo.textContent =
 ` ${lockHint}
@@ -301,6 +312,7 @@ function refreshHud(elapsed = 0) {
  F: remove looked-at block
  Hits: ${playerHits}/5  Kills: ${enemyKills}  Coins: ${score}
  Skill-2: ${skillState}
+ Multishot: ${multiShotState}
  ${modeLabel()}
  Wow point: Valorant-style gate + FPS combat loop`;
 }
@@ -353,6 +365,13 @@ const playerBullets = [];
 const enemyBullets = [];
 let shootCooldown = 0;
 let damageCooldown = 0;
+const spreadRight = new THREE.Vector3();
+const spreadUp = new THREE.Vector3();
+
+function activateMultiShot(elapsed) {
+  multiShotEndsAt = Math.max(multiShotEndsAt, elapsed) + 3.0;
+  showPrompt('Sky orb destroyed: Multishot 3.0s');
+}
 
 function canOccupy(testX, testZ) {
   const offsets = [
@@ -490,11 +509,36 @@ function firePlayerBullet() {
   if (shootCooldown > 0) return;
   if (mode !== 1 && mode !== 2) return;
 
+  const elapsed = clock.elapsedTime;
   camera.getWorldDirection(lookDirection);
   const origin = camera.position.clone()
     .addScaledVector(lookDirection, 0.9)
     .addScaledVector(worldUp, -0.08);
-  createBullet(origin, lookDirection, 22, false);
+
+  if (elapsed < multiShotEndsAt) {
+    spreadRight.crossVectors(lookDirection, worldUp).normalize();
+    if (spreadRight.lengthSq() < 0.000001) spreadRight.set(1, 0, 0);
+    spreadUp.crossVectors(spreadRight, lookDirection).normalize();
+    if (spreadUp.lengthSq() < 0.000001) spreadUp.set(0, 1, 0);
+    const spreadPattern = [
+      [0, 0],
+      [0.05, 0], [-0.05, 0],
+      [0, 0.04], [0, -0.04],
+      [0.04, 0.03], [-0.04, -0.03],
+      [0.04, -0.03], [-0.04, 0.03]
+    ];
+
+    for (const [rx, uy] of spreadPattern) {
+      const dir = lookDirection.clone()
+        .addScaledVector(spreadRight, rx)
+        .addScaledVector(spreadUp, uy)
+        .normalize();
+      createBullet(origin.clone(), dir, 22, false);
+    }
+  } else {
+    createBullet(origin, lookDirection, 22, false);
+  }
+
   shootCooldown = 0.13;
 }
 
@@ -596,6 +640,28 @@ function updateBulletArray(bulletArray, deltaSeconds, isEnemy) {
         bulletArray.splice(i, 1);
         registerPlayerHit();
       }
+      continue;
+    }
+
+    let hitSkyOrb = false;
+    for (let s = destructibleSkyOrbs.length - 1; s >= 0; s -= 1) {
+      const orb = destructibleSkyOrbs[s];
+      if (!orb.parent) {
+        destructibleSkyOrbs.splice(s, 1);
+        continue;
+      }
+      if (bullet.mesh.position.distanceTo(orb.position) < 0.65) {
+        decorGroup.remove(orb);
+        destructibleSkyOrbs.splice(s, 1);
+        activateMultiShot(clock.elapsedTime);
+        hitSkyOrb = true;
+        break;
+      }
+    }
+    if (hitSkyOrb) {
+      refreshHud(clock.elapsedTime);
+      bulletGroup.remove(bullet.mesh);
+      bulletArray.splice(i, 1);
       continue;
     }
 
@@ -986,6 +1052,14 @@ function animate() {
   if (animatedGateSpheres[0]) {
     animatedGateSpheres[0].position.y = 3.45 + Math.sin(elapsed * 2.7) * 0.14;
     animatedGateSpheres[1].position.y = 3.45 + Math.cos(elapsed * 2.7) * 0.14;
+  }
+
+  for (let i = 0; i < destructibleSkyOrbs.length; i += 1) {
+    const orb = destructibleSkyOrbs[i];
+    if (!orb.parent) continue;
+    const baseY = orb.userData.baseY ?? orb.position.y;
+    const phase = orb.userData.phase ?? 0;
+    orb.position.y = baseY + Math.sin(elapsed * 1.4 + phase) * 0.18;
   }
 
   if (weaponModel) {
