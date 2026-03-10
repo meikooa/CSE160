@@ -205,7 +205,7 @@ for (let i = 0; i < 5; i++) {
     Math.random() * 20 - 10,
     1.5,
     Math.random() * 20 - 10
-  );a
+  );
 
   scene.add(tree);
 
