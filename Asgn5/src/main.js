@@ -50,11 +50,11 @@ controls.enableDamping = true;
 
 const textureLoader = new THREE.TextureLoader();
 
-const skyTexture = textureLoader.load('./texture/sky.jpg');
-const rockTexture = textureLoader.load('./texture/rock.jpg');
-const wallTexture = textureLoader.load('./texture/wall.jpg');
-const woodTexture = textureLoader.load('./texture/wood.png');
-const breakWallTexture = textureLoader.load('./texture/CanBreak_wall.jpg');
+const skyTexture = textureLoader.load('../texture/sky.jpg');
+const rockTexture = textureLoader.load('../texture/rock.jpg');
+const wallTexture = textureLoader.load('../texture/wall.jpg');
+const woodTexture = textureLoader.load('../texture/wood.png');
+const breakWallTexture = textureLoader.load('../texture/CanBreak_wall.jpg');
 
 
 // Background sky
@@ -214,7 +214,7 @@ for (let i = 0; i < 5; i++) {
 
 const gltfLoader = new GLTFLoader();
 
-gltfLoader.load('./model/3Dmodel.glb', function (gltf) {
+gltfLoader.load('../model/3Dmodel.glb', function (gltf) {
 
     const model = gltf.scene;
 
