@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ----------------------
 // Scene
@@ -211,6 +211,19 @@ for (let i = 0; i < 5; i++) {
   scene.add(tree);
 
 }
+
+const gltfLoader = new GLTFLoader();
+
+gltfLoader.load('./model/3Dmodel.glb', function (gltf) {
+
+    const model = gltf.scene;
+
+    model.scale.set(2, 2, 2);   // resize if needed
+    model.position.set(0, 0, -5);
+
+    scene.add(model);
+
+});
 
 
 // ----------------------
